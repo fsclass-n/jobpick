@@ -26,11 +26,17 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 - 정식 관리자 계정은 서버 초기화 스크립트로만 생성 (회원가입 API로 생성 불가)
 
 ## 배포
-- `.github/workflows/deploy.yml`만 배포를 수행 (Netlify Git 빌드·Render Auto-Deploy는 Off)
-- `frontend/**` 변경 → Actions 빌드 후 Netlify 데모 배포 + Render 프런트엔드 Deploy Hook
-- `backend/**`, `rpa/**`, `requirements.txt`, `.python-version` 변경 → 검사 후 Render 백엔드 Deploy Hook
+- GitHub Secrets/Variables는 쓰지 않음. Netlify·Render가 GitHub 연동으로 직접 빌드·배포
+- `netlify.toml`(Netlify 데모), `render.yaml`(Render Static Site `jobpick` + Web Service `jobpick-api`)에 빌드 설정을 코드로 관리
+- `.github/workflows/deploy.yml`은 CI 게이트 (프런트 빌드, 백엔드 기동·`/api/health` 확인). Render는 CI 통과 커밋만 배포(`checksPass`)
+- `frontend/**` 변경 → Netlify + Render 프런트, `backend/**`·`rpa/**`·`requirements.txt`·`.python-version` 변경 → Render API
 - Python 버전은 `.python-version`(3.11)으로 고정 (Render 기본값 3.14)
 - 플랫폼별 설정값은 `docs/산출물/배포_환경설정.md` 참고
+
+## 실행·검증 명령
+- 백엔드: `.venv/Scripts/python -m uvicorn backend.app.main:app --reload` → `GET /api/health`
+- 프런트: `cd frontend && npm ci && npm run build` (개발 서버 `npm run dev`)
+- 워크플로 수정 시 actionlint로 검사
 
 ## 채용 공고 수집원
 - 고용24 채용정보 목록/상세 API는 개인 신청 불가 → 공공데이터포털·서울 열린데이터광장을 주 수집원으로 사용
@@ -43,5 +49,3 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 ## 미결 사항
 - 샌드박스 데이터 분리 방식(별도 스키마 vs `is_sandbox` 컬럼)은 2단계 ERD 설계 시 결정
 
-## 빌드·테스트 명령
-- 아직 정의되지 않음. 프로젝트 초기화 후 이 섹션에 추가

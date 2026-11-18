@@ -1,38 +1,31 @@
-name: Deploy
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      target:
-        description: 배포 대상
-        type: choice
-        options: [all, frontend, backend]
-        default: all
 
 permissions:
   contents: read
-
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.target != 'backend') }}
-      backend: ${{ steps.filter.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.target != 'frontend') }}
+      frontend: ${{ steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+      backend: ${{ steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v7
       - id: filter
-        if: github.event_name == 'push'
+        if: github.event_name != 'workflow_dispatch'
         uses: dorny/paths-filter@v4
         with:
           filters: |
             frontend:
               - 'frontend/**'
+              - 'netlify.toml'
             backend:
               - 'backend/**'
               - 'rpa/**'
@@ -40,70 +33,25 @@ jobs:
               - '.python-version'
 
   frontend:
-    name: Frontend build + Netlify demo
+    name: Frontend build
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      ready: ${{ steps.check.outputs.ready }}
     defaults:
       run:
         working-directory: frontend
-    env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     steps:
       - uses: actions/checkout@v7
-      - id: check
-        run: |
-          if [ -f package.json ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::frontend/package.json 이 없어 프런트엔드 배포를 건너뜁니다."
-          fi
-      - if: steps.check.outputs.ready == 'true'
-        uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - if: steps.check.outputs.ready == 'true'
-        run: npm ci
-      - name: Build (Netlify demo env)
-        if: steps.check.outputs.ready == 'true'
-        env:
-          VITE_API_BASE_URL: ${{ vars.NETLIFY_VITE_API_BASE_URL }}
-          VITE_USE_MOCK: ${{ vars.NETLIFY_VITE_USE_MOCK || 'true' }}
-        run: |
-          npm run build
-          echo '/* /index.html 200' > dist/_redirects
-      - name: Deploy to Netlify
-        if: steps.check.outputs.ready == 'true'
-        run: |
-          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
-            echo "::warning::NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID 미설정 - Netlify 배포를 건너뜁니다."
-            exit 0
-          fi
-          npx --yes netlify-cli@27.16.3 deploy --prod --no-build --dir=dist \
-            --site="$NETLIFY_SITE_ID" --message="${GITHUB_SHA::7} ${{ github.event_name }}"
-
-  render-frontend:
-    name: Render frontend (jobpick.onrender.com)
-    needs: [changes, frontend]
-    if: needs.frontend.outputs.ready == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_DEPLOY_HOOK_FRONTEND 미설정 - Render 프런트엔드 배포를 건너뜁니다."
-            exit 0
-          fi
-          curl -fsS -X POST "$HOOK" -o /dev/null && echo "Render 프런트엔드 배포를 요청했습니다."
+      - run: npm ci
+      - run: npm run build
 
   backend:
-    name: Backend check + Render API (jobpick-api.onrender.com)
+    name: Backend check
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
@@ -112,20 +60,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
-      - name: Install dependencies
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q backend rpa
+      - name: App start & health check
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Check
-        run: |
-          python -m compileall -q backend rpa
-          if [ -d tests ] || [ -d backend/tests ]; then python -m pytest -q; fi
-      - name: Trigger Render deploy
-        env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_DEPLOY_HOOK_BACKEND 미설정 - Render 백엔드 배포를 건너뜁니다."
-            exit 0
-          fi
-          curl -fsS -X POST "$HOOK" -o /dev/null && echo "Render 백엔드 배포를 요청했습니다."
+          python -m uvicorn backend.app.main:app --port 8000 &
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8000/api/health && exit 0; sleep 1; done
+          exit 1
+      - run: if [ -d tests ] || [ -d backend/tests ]; then python -m pytest -q; fi

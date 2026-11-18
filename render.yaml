@@ -1,0 +1,99 @@
+services:
+  - type: web
+    name: jobpick-api
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - backend/**
+        - rpa/**
+        - requirements.txt
+        - .python-version
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://jobpick.netlify.app,https://jobpick.onrender.com
+      - key: OAUTH_REDIRECT_BASE_URL
+        value: https://jobpick-api.onrender.com
+      - key: USER_JWT_SECRET
+        generateValue: true
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      - key: USER_JWT_EXPIRE_MINUTES
+        value: "120"
+      - key: ADMIN_JWT_EXPIRE_MINUTES
+        value: "30"
+      - key: ADMIN_LOGIN_MAX_FAILURES
+        value: "5"
+      - key: ADMIN_LOGIN_LOCK_MINUTES
+        value: "15"
+      - key: ADMIN_TOTP_ISSUER
+        value: jobpick
+      - key: STORAGE_BACKEND
+        value: local
+      - key: RPA_HEADLESS
+        value: "true"
+      - key: OCR_LANG
+        value: kor+eng
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_INITIAL_EMAIL
+        sync: false
+      - key: ADMIN_INITIAL_PASSWORD
+        sync: false
+      - key: ADMIN_TOTP_ENCRYPTION_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: NAVER_CLIENT_ID
+        sync: false
+      - key: NAVER_CLIENT_SECRET
+        sync: false
+      - key: KAKAO_CLIENT_ID
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: DATA_GO_KR_API_KEY
+        sync: false
+      - key: SEOUL_OPEN_API_KEY
+        sync: false
+      - key: WORK24_API_KEY
+        sync: false
+      - key: SARAMIN_ACCESS_KEY
+        sync: false
+
+  - type: web
+    name: jobpick
+    runtime: static
+    branch: main
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - frontend/**
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: VITE_API_BASE_URL
+        value: https://jobpick-api.onrender.com
+      - key: VITE_USE_MOCK
+        value: "false"
