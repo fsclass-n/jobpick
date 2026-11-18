@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+*.db
+*.sqlite3
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.vite/
+*.local
+
+# Playwright / RPA
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Local storage (uploaded resumes, crawled raw data, reports)
+storage/
+uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
