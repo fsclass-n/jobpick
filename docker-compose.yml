@@ -1,0 +1,67 @@
+# 로컬 통합 실행: docker compose up --build
+#  - web : http://localhost:8080  (React 정적 빌드, nginx)
+#  - api : http://localhost:8000  (FastAPI, /docs)
+#  - db  : MySQL 8 (TiDB 와 호환되는 MySQL 프로토콜)
+#  - rpa : 수집 작업 1회 실행 (docker compose --profile rpa run --rm rpa)
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: jobpick
+      MYSQL_USER: jobpick
+      MYSQL_PASSWORD: jobpick-local
+      MYSQL_ROOT_PASSWORD: jobpick-root
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ujobpick", "-pjobpick-local"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql+pymysql://jobpick:jobpick-local@db:3306/jobpick?charset=utf8mb4
+      STORAGE_DIR: /app/storage
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      FRONTEND_URL: http://localhost:8080
+      BACKEND_URL: http://localhost:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+  rpa:
+    profiles: ["rpa"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql+pymysql://jobpick:jobpick-local@db:3306/jobpick?charset=utf8mb4
+    command: ["python", "-m", "rpa.run", "--all"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  uploads:

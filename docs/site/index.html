@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jobpick · 프로젝트 안내</title>
+  <meta name="description" content="생성형 AI & RPA 기반 맞춤형 커리어 컨설팅 시스템 jobpick 프로젝트 안내 페이지" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --ink: #0f1430; --ink2: #5b6385; --line: #e7e9f3; --bg: #f5f6fb; --pick: #5b5bf7; --match: #18c99a; --sun: #f5a524; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: "Noto Sans KR", system-ui, sans-serif; color: var(--ink); background: var(--bg); word-break: keep-all; line-height: 1.65; }
+    h1, h2, h3 { font-family: "IBM Plex Sans KR", sans-serif; letter-spacing: -0.02em; line-height: 1.25; }
+    a { color: var(--pick); }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+    header.top { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+    header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .logo { display: flex; align-items: center; gap: 10px; font: 700 20px "IBM Plex Sans KR"; color: var(--ink); text-decoration: none; }
+    .logo span { background: linear-gradient(90deg, var(--pick), var(--match)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    nav a { margin-left: 20px; font-size: 14px; font-weight: 600; color: var(--ink2); text-decoration: none; }
+    nav a:hover { color: var(--ink); }
+    .hero { background: #090c22; color: #fff; padding: 88px 0 72px; position: relative; overflow: hidden; }
+    .hero::before { content: ""; position: absolute; inset: 0; background: radial-gradient(600px 400px at 10% 0%, rgba(91,91,247,.35), transparent), radial-gradient(500px 400px at 100% 100%, rgba(24,201,154,.25), transparent); }
+    .hero .wrap { position: relative; }
+    .eyebrow { display: inline-block; padding: 6px 14px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; font-size: 13px; color: rgba(255,255,255,.8); }
+    .hero h1 { font-size: clamp(32px, 5vw, 54px); margin: 20px 0 16px; }
+    .grad { background: linear-gradient(90deg, #7b7fff, #3ee0b5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero p { color: rgba(255,255,255,.72); max-width: 640px; font-size: 17px; }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; }
+    .btn.primary { background: var(--pick); color: #fff; box-shadow: 0 12px 32px -12px rgba(91,91,247,.8); }
+    .btn.ghost { border: 1px solid rgba(255,255,255,.2); color: #fff; }
+    .btn.light { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+    .shot { margin-top: 48px; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 30px 80px -30px rgba(0,0,0,.6); }
+    .shot img { display: block; width: 100%; }
+    section { padding: 72px 0; }
+    section h2 { font-size: 30px; margin: 0 0 8px; }
+    .lead { color: var(--ink2); margin: 0 0 32px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: 0 8px 24px -16px rgba(15,20,48,.18); }
+    .card h3 { margin: 10px 0 6px; font-size: 18px; }
+    .card p { margin: 0; color: var(--ink2); font-size: 14px; }
+    .num { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--pick), var(--match)); }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; font-size: 14px; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { background: #f5f6fb; color: var(--ink2); font-weight: 600; }
+    tr:last-child td { border-bottom: 0; }
+    code { background: #eef0ff; color: #3c34b8; padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+    .tag { display: inline-block; margin: 0 6px 6px 0; padding: 4px 10px; border-radius: 8px; background: #eef0ff; color: #4a43e0; font-size: 12px; font-weight: 700; }
+    .shots { display: grid; gap: 16px; grid-template-columns: 2fr 1fr; align-items: start; }
+    .shots img { width: 100%; border-radius: 14px; border: 1px solid var(--line); }
+    .team { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .member { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-weight: 600; }
+    .avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, var(--pick), var(--match)); }
+    .leader { margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #eef0ff; color: #4a43e0; }
+    footer { background: #090c22; color: #a3a9c4; padding: 32px 0; font-size: 13px; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+    footer button { background: none; border: 1px solid rgba(255,255,255,.15); color: #fff; padding: 8px 14px; border-radius: 10px; cursor: pointer; font: inherit; }
+    @media (max-width: 760px) { nav { display: none; } .shots { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" href="#"><img src="assets/favicon.svg" width="32" height="32" alt="" />job<span>pick</span></a>
+      <nav>
+        <a href="#features">주요 기능</a>
+        <a href="#roles">권한 체계</a>
+        <a href="#stack">기술 스택</a>
+        <a href="#deploy">배포</a>
+        <a href="#team">팀</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="wrap">
+      <span class="eyebrow">RPA × 생성형 AI 맞춤형 커리어 컨설팅</span>
+      <h1>공고와 나를 맞대면,<br /><span class="grad">합격</span>이 보입니다</h1>
+      <p>jobpick은 RPA가 수집한 채용 공고를 생성형 AI가 사용자의 자기소개서와 대조해 합격 가능성(적합도)을 분석하고, 문항별 수정 가이드라인을 작성해 주는 커리어 컨설팅 서비스입니다.</p>
+      <div class="btns">
+        <a class="btn primary" href="https://jobpick.netlify.app">데모 체험하기</a>
+        <a class="btn ghost" href="https://jobpick.onrender.com">서비스 바로가기</a>
+        <a class="btn ghost" href="https://github.com/fsclass-n/jobpick">GitHub 저장소</a>
+        <a class="btn ghost" href="https://jobpick-api.onrender.com/docs">API 문서</a>
+      </div>
+      <div class="shot"><img src="assets/01_main_hero.png" alt="jobpick 메인 화면 - 공고와 자소서 카드가 매칭되는 히어로 인터랙션" /></div>
+    </div>
+  </div>
+
+  <main>
+    <section id="features">
+      <div class="wrap">
+        <h2>네 단계로 끝나는 맞춤 컨설팅</h2>
+        <p class="lead">공고를 찾고 자소서를 혼자 고치던 시간을 데이터 기반 피드백으로 바꿉니다.</p>
+        <div class="grid">
+          <div class="card"><span class="num">1</span><h3>공고 자동 수집</h3><p>고용24 Open API, 채용 게시판(BS4/Playwright)에서 공고를 수집하고 자격요건·우대사항·인재상으로 정형화합니다. robots.txt를 준수합니다.</p></div>
+          <div class="card"><span class="num">2</span><h3>자소서 등록</h3><p>텍스트 입력 또는 PDF·이미지 업로드(OCR)로 문항을 자동 분리하고, 수정할 때마다 버전을 남깁니다.</p></div>
+          <div class="card"><span class="num">3</span><h3>AI 대조 분석</h3><p>Google Gemini와 규칙 기반 엔진이 키워드·요건·인재상·문장 완성도 5개 영역으로 적합도를 산출합니다.</p></div>
+          <div class="card"><span class="num">4</span><h3>수정 가이드</h3><p>문항별 수정 가이드라인과 개선 예시 문장, 다음 행동을 제시하고 점수 변화를 추적합니다.</p></div>
+        </div>
+        <div class="shots" style="margin-top:32px">
+          <img src="assets/07_report.png" alt="AI 분석 리포트 화면" />
+          <img src="assets/14_mobile_drawer.png" alt="모바일 드로어 메뉴" />
+        </div>
+      </div>
+    </section>
+
+    <section id="roles" style="background:#fff">
+      <div class="wrap">
+        <h2>권한별 로그인 시스템</h2>
+        <p class="lead">세 가지 계정 유형의 세션, 권한 범위, 접근 경로를 분리했습니다.</p>
+        <table>
+          <thead><tr><th>구분</th><th>로그인 경로</th><th>접근 범위</th><th>세션</th></tr></thead>
+          <tbody>
+            <tr><td><strong>일반 사용자</strong></td><td><code>/login</code> · 소셜 로그인</td><td>공고 탐색, 자소서 관리, AI 분석, 분석 이력</td><td>사용자 토큰 (12시간)</td></tr>
+            <tr><td><strong>테스트 관리자</strong></td><td><code>/login</code> 테스트 관리자 버튼</td><td><code>/sandbox/admin</code> — 샌드박스 데이터만</td><td>샌드박스 토큰 (2시간)</td></tr>
+            <tr><td><strong>정식 관리자</strong></td><td><code>/admin/login</code> (링크 미노출)</td><td><code>/admin</code> — 운영 데이터, 접속 로그</td><td>별도 서명키 토큰 (30분), 탭 종료 시 만료</td></tr>
+          </tbody>
+        </table>
+        <div class="shot" style="margin-top:28px;border-color:var(--line)"><img src="assets/09_admin_dashboard.png" alt="관리자 모니터링 대시보드" /></div>
+      </div>
+    </section>
+
+    <section id="stack">
+      <div class="wrap">
+        <h2>기술 스택</h2>
+        <p class="lead">단일 <code>.env</code>, 단일 <code>requirements.txt</code>, <code>.venv</code> 규칙으로 관리합니다.</p>
+        <div class="grid">
+          <div class="card"><h3>Frontend</h3><span class="tag">React 19</span><span class="tag">Vite</span><span class="tag">Tailwind CSS v4</span><span class="tag">React Router</span><span class="tag">FontAwesome</span></div>
+          <div class="card"><h3>Backend</h3><span class="tag">Python 3.11</span><span class="tag">FastAPI</span><span class="tag">SQLAlchemy</span><span class="tag">JWT</span><span class="tag">OAuth 2.0</span></div>
+          <div class="card"><h3>Data · RPA</h3><span class="tag">TiDB / MySQL / SQLite</span><span class="tag">pandas</span><span class="tag">NumPy</span><span class="tag">Requests</span><span class="tag">BeautifulSoup4</span><span class="tag">Playwright</span><span class="tag">Tesseract OCR</span></div>
+          <div class="card"><h3>AI · Infra</h3><span class="tag">Google Gemini</span><span class="tag">Render</span><span class="tag">Netlify</span><span class="tag">Docker Compose</span><span class="tag">GitHub Actions</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="deploy" style="background:#fff">
+      <div class="wrap">
+        <h2>배포 도메인</h2>
+        <p class="lead">변경된 영역만 개별 자동 배포합니다 (GitHub Actions paths-filter).</p>
+        <table>
+          <thead><tr><th>구분</th><th>URL</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>GitHub Repository</td><td><a href="https://github.com/fsclass-n/jobpick">github.com/fsclass-n/jobpick</a></td><td>소스코드 관리</td></tr>
+            <tr><td>Frontend Demo</td><td><a href="https://jobpick.netlify.app">jobpick.netlify.app</a></td><td>Netlify · Mock 데이터 데모</td></tr>
+            <tr><td>Frontend</td><td><a href="https://jobpick.onrender.com">jobpick.onrender.com</a></td><td>Render Static Site</td></tr>
+            <tr><td>Backend API</td><td><a href="https://jobpick-api.onrender.com/docs">jobpick-api.onrender.com</a></td><td>Render Web Service · FastAPI</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="team">
+      <div class="wrap">
+        <h2>Team jobpick</h2>
+        <p class="lead">4인 팀 프로젝트</p>
+        <div class="team">
+          <div class="member"><span class="avatar">박</span>박미금<span class="leader">조장</span></div>
+          <div class="member"><span class="avatar">이</span>이오리</div>
+          <div class="member"><span class="avatar">김</span>김모란</div>
+          <div class="member"><span class="avatar">홍</span>홍기흥</div>
+        </div>
+        <div class="btns"><a class="btn light" href="https://github.com/fsclass-n/jobpick/tree/main/docs">프로젝트 산출물 보기</a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 jobpick · 분석 결과는 참고용이며 실제 채용 결과를 보장하지 않습니다.</span>
+      <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">To the Top ↑</button>
+    </div>
+  </footer>
+</body>
+</html>

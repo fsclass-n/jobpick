@@ -1,0 +1,162 @@
+# jobpick CI/CD
+#  - 변경된 영역만 테스트/배포합니다.
+#      frontend/**, rpa/data/**            -> 프런트 빌드 -> Netlify 데모 + Render 프런트엔드 배포
+#      backend/**, rpa/**, requirements.txt -> pytest -> Render 백엔드 API 배포
+#      docs/site/**                         -> GitHub Pages 프로젝트 안내 페이지 배포
+#  - 필요한 저장소 Secrets
+#      NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID
+#      RENDER_API_DEPLOY_HOOK  (jobpick-api 서비스 Settings > Deploy Hook URL)
+#      RENDER_WEB_DEPLOY_HOOK  (jobpick 정적 사이트 Settings > Deploy Hook URL)
+name: CI / Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: "모든 영역 강제 배포"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend == 'true' || inputs.deploy_all == true }}
+      backend: ${{ steps.filter.outputs.backend == 'true' || inputs.deploy_all == true }}
+      pages: ${{ steps.filter.outputs.pages == 'true' || inputs.deploy_all == true }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'rpa/data/**'
+              - 'netlify.toml'
+            backend:
+              - 'backend/**'
+              - 'rpa/**'
+              - 'requirements.txt'
+              - 'pytest.ini'
+              - 'render.yaml'
+            pages:
+              - 'docs/site/**'
+
+  backend-test:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+
+  frontend-build:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Build (Render 프런트엔드 - 실제 API)
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://jobpick-api.onrender.com
+      - name: Build (Netlify 데모 - Mock)
+        run: npm run build:demo -- --outDir dist-demo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-demo
+          path: frontend/dist-demo
+
+  deploy-netlify:
+    needs: [changes, frontend-build]
+    if: github.event_name != 'pull_request' && needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: netlify-demo
+      url: https://jobpick.netlify.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-demo
+          path: frontend/dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Deploy to Netlify
+        run: npx --yes netlify-cli@27.16.3 deploy --prod --dir=frontend/dist --site="$NETLIFY_SITE_ID" --message="${GITHUB_SHA::7}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  deploy-render-web:
+    needs: [changes, frontend-build]
+    if: github.event_name != 'pull_request' && needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: render-frontend
+      url: https://jobpick.onrender.com
+    steps:
+      - name: Trigger Render deploy (jobpick)
+        run: curl --fail --silent --show-error -X POST "$HOOK"
+        env:
+          HOOK: ${{ secrets.RENDER_WEB_DEPLOY_HOOK }}
+
+  deploy-render-api:
+    needs: [changes, backend-test]
+    if: github.event_name != 'pull_request' && needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: render-api
+      url: https://jobpick-api.onrender.com
+    steps:
+      - name: Trigger Render deploy (jobpick-api)
+        run: curl --fail --silent --show-error -X POST "$HOOK"
+        env:
+          HOOK: ${{ secrets.RENDER_API_DEPLOY_HOOK }}
+
+  deploy-pages:
+    needs: changes
+    if: github.event_name != 'pull_request' && needs.changes.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: https://fsclass-n.github.io/jobpick/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site
+      - uses: actions/deploy-pages@v4

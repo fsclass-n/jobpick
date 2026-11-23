@@ -1,0 +1,147 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* ===== Design Tokens ===== */
+@theme {
+  /* 본문용: Pretendard / 제목용: IBM Plex Sans KR */
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "IBM Plex Sans KR", "Pretendard Variable", Pretendard, sans-serif;
+
+  --color-ink-950: #090c22;
+  --color-ink-900: #0f1430;
+  --color-ink-800: #1b2147;
+  --color-ink-700: #2a3157;
+  --color-ink-500: #5b6385;
+  --color-ink-400: #7d84a3;
+  --color-ink-300: #a3a9c4;
+  --color-ink-200: #cdd1e3;
+  --color-ink-100: #e7e9f3;
+  --color-ink-50: #f5f6fb;
+
+  --color-pick-50: #eef0ff;
+  --color-pick-100: #dfe2ff;
+  --color-pick-200: #c3c8ff;
+  --color-pick-300: #a0a4ff;
+  --color-pick-400: #7b7fff;
+  --color-pick-500: #5b5bf7;
+  --color-pick-600: #4a43e0;
+  --color-pick-700: #3c34b8;
+
+  --color-match-50: #e8fbf5;
+  --color-match-100: #c9f5e7;
+  --color-match-400: #3ee0b5;
+  --color-match-500: #18c99a;
+  --color-match-600: #0ea47d;
+
+  --color-coral-50: #fff1f1;
+  --color-coral-400: #ff8a8a;
+  --color-coral-500: #ff6b6b;
+  --color-coral-600: #e04f4f;
+
+  --color-sun-50: #fff8e6;
+  --color-sun-400: #ffc44d;
+  --color-sun-500: #f5a524;
+
+  --shadow-card: 0 1px 2px rgb(15 20 48 / 0.04), 0 8px 24px -12px rgb(15 20 48 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(15 20 48 / 0.05), 0 20px 40px -16px rgb(15 20 48 / 0.22);
+  --shadow-glow: 0 0 0 1px rgb(91 91 247 / 0.15), 0 16px 48px -12px rgb(91 91 247 / 0.45);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-left: slide-from-left 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-right: slide-from-right 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-draw: draw 1.2s ease-out forwards;
+  --animate-pop: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-from-left {
+    from { opacity: 0; transform: translateX(-60px) rotate(-6deg); }
+    to { opacity: 1; transform: translateX(0) rotate(-3deg); }
+  }
+  @keyframes slide-from-right {
+    from { opacity: 0; transform: translateX(60px) rotate(6deg); }
+    to { opacity: 1; transform: translateX(0) rotate(3deg); }
+  }
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+}
+
+/* ===== Base ===== */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-ink-50 font-sans text-ink-900 antialiased;
+    word-break: keep-all;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+  ::selection {
+    @apply bg-pick-200 text-ink-900;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-pick-500;
+  }
+}
+
+/* ===== Utilities ===== */
+@utility container-page {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+@utility card {
+  @apply rounded-2xl border border-ink-100 bg-white shadow-card;
+}
+@utility input {
+  @apply w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 outline-none transition placeholder:text-ink-300 focus:border-pick-500 focus:ring-4 focus:ring-pick-100 disabled:bg-ink-50;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-semibold text-ink-700;
+}
+@utility text-gradient {
+  @apply bg-gradient-to-r from-pick-500 via-pick-400 to-match-500 bg-clip-text text-transparent;
+}
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+@utility skeleton {
+  @apply rounded-lg bg-ink-100;
+  background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.7), transparent);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* 사용자 OS 설정에서 동작 줄이기를 선택한 경우 애니메이션 최소화 */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
