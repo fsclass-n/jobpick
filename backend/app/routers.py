@@ -1,13 +1,21 @@
+import os
+import secrets
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 from itertools import count
+from urllib.parse import urlencode
 
+import httpx
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from .data import CUTOFF, JOBS, PROFILE_SKILLS, USERS
-from .security import check_admin_key, issue, require_admin_view, require_user
+from .security import USER_SECRET, check_admin_key, issue, require_admin_view, require_user
 
 auth = APIRouter(prefix="/api/auth", tags=["auth"])
+oauth = APIRouter(prefix="/api/auth/oauth", tags=["oauth"])
 api = APIRouter(prefix="/api", tags=["journey"], dependencies=[Depends(require_user)])
 admin = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin_view)])
 admin_auth = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -23,6 +31,113 @@ def demo_login():
 @auth.post("/test-admin")
 def test_admin_login():
     return {"access_token": issue("TEST_ADMIN", "test-admin"), "role": "TEST_ADMIN", "read_only": True}
+
+
+PROVIDERS = {
+    "google": {
+        "authorize": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token": "https://oauth2.googleapis.com/token",
+        "profile": "https://openidconnect.googleapis.com/v1/userinfo",
+        "scope": "openid email profile",
+    },
+    "naver": {
+        "authorize": "https://nid.naver.com/oauth2.0/authorize",
+        "token": "https://nid.naver.com/oauth2.0/token",
+        "profile": "https://openapi.naver.com/v1/nid/me",
+        "scope": "",
+    },
+    "kakao": {
+        "authorize": "https://kauth.kakao.com/oauth/authorize",
+        "token": "https://kauth.kakao.com/oauth/token",
+        "profile": "https://kapi.kakao.com/v2/user/me",
+        "scope": "profile_nickname account_email",
+    },
+}
+STATE_AUD = "jobpick:oauth-state"
+NONCE_COOKIE = "jp_oauth_nonce"
+
+
+def _credentials(provider: str) -> tuple[str, str]:
+    return os.getenv(f"{provider.upper()}_CLIENT_ID", ""), os.getenv(f"{provider.upper()}_CLIENT_SECRET", "")
+
+
+def _redirect_uri(provider: str) -> str:
+    base = os.getenv("OAUTH_REDIRECT_BASE_URL", "http://localhost:8000").rstrip("/")
+    return f"{base}/api/auth/oauth/{provider}/callback"
+
+
+def _front(path: str, **params) -> RedirectResponse:
+    base = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+    return RedirectResponse(f"{base}{path}#{urlencode(params)}", status_code=302)
+
+
+def _extract_profile(provider: str, data: dict) -> tuple[str, str | None, str]:
+    if provider == "google":
+        return data["sub"], data.get("email"), data.get("name") or "Google 사용자"
+    if provider == "naver":
+        info = data.get("response", {})
+        return info["id"], info.get("email"), info.get("name") or info.get("nickname") or "네이버 사용자"
+    account = data.get("kakao_account", {})
+    return str(data["id"]), account.get("email"), account.get("profile", {}).get("nickname") or "카카오 사용자"
+
+
+@oauth.get("/providers")
+def oauth_providers():
+    return {name: bool(all(_credentials(name))) for name in PROVIDERS}
+
+
+@oauth.get("/{provider}/login")
+def oauth_login(provider: str):
+    if provider not in PROVIDERS:
+        raise HTTPException(404, "지원하지 않는 로그인 방식입니다.")
+    client_id, client_secret = _credentials(provider)
+    if not client_id or not client_secret:
+        return _front("/login", error=f"{provider} 로그인이 아직 설정되지 않았습니다.")
+    nonce = secrets.token_urlsafe(16)
+    state = jwt.encode({"aud": STATE_AUD, "provider": provider, "nonce": nonce,
+                        "exp": datetime.now(timezone.utc) + timedelta(minutes=10)},
+                       USER_SECRET, algorithm="HS256")
+    params = {"response_type": "code", "client_id": client_id,
+              "redirect_uri": _redirect_uri(provider), "state": state}
+    if PROVIDERS[provider]["scope"]:
+        params["scope"] = PROVIDERS[provider]["scope"]
+    response = RedirectResponse(f"{PROVIDERS[provider]['authorize']}?{urlencode(params)}")
+    response.set_cookie(NONCE_COOKIE, nonce, max_age=600, httponly=True, samesite="lax",
+                        secure=os.getenv("OAUTH_REDIRECT_BASE_URL", "").startswith("https"))
+    return response
+
+
+@oauth.get("/{provider}/callback")
+def oauth_callback(provider: str, request: Request, code: str = "", state: str = "", error: str = ""):
+    if provider not in PROVIDERS or error or not code:
+        return _front("/login", error="소셜 로그인이 취소되었거나 실패했습니다.")
+    try:
+        claims = jwt.decode(state, USER_SECRET, algorithms=["HS256"], audience=STATE_AUD)
+    except jwt.PyJWTError:
+        return _front("/login", error="로그인 요청이 만료되었습니다. 다시 시도해 주세요.")
+    if claims.get("provider") != provider or claims.get("nonce") != request.cookies.get(NONCE_COOKIE):
+        return _front("/login", error="잘못된 로그인 요청입니다.")
+
+    client_id, client_secret = _credentials(provider)
+    conf = PROVIDERS[provider]
+    try:
+        with httpx.Client(timeout=10) as client:
+            token_res = client.post(conf["token"], data={
+                "grant_type": "authorization_code", "code": code, "client_id": client_id,
+                "client_secret": client_secret, "redirect_uri": _redirect_uri(provider), "state": state,
+            }, headers={"Accept": "application/json"})
+            token_res.raise_for_status()
+            access_token = token_res.json()["access_token"]
+            profile_res = client.get(conf["profile"], headers={"Authorization": f"Bearer {access_token}"})
+            profile_res.raise_for_status()
+            provider_id, email, name = _extract_profile(provider, profile_res.json())
+    except (httpx.HTTPError, KeyError, ValueError):
+        return _front("/login", error="소셜 계정 정보를 가져오지 못했습니다.")
+
+    subject = email or f"{provider}:{provider_id}"
+    response = _front("/login", token=issue("USER", subject), role="USER", provider=provider, name=name)
+    response.delete_cookie(NONCE_COOKIE)
+    return response
 
 
 class AdminLogin(BaseModel):

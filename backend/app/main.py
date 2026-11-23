@@ -7,7 +7,7 @@ load_dotenv()
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-from .routers import admin, admin_auth, api, auth  # noqa: E402
+from .routers import admin, admin_auth, api, auth, oauth  # noqa: E402
 
 app = FastAPI(title="jobpick API", version="0.3.0")
 
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(auth)
+app.include_router(oauth)
 app.include_router(api)
 app.include_router(admin_auth)
 app.include_router(admin)
