@@ -37,15 +37,15 @@ export default function Match() {
           {list.map((j) => {
             const fit = fitOf(j), sel = target && j.id === target.id
             return (
-              <article key={j.id} onClick={() => setTargetId(j.id)} className={`tile group cursor-pointer p-5 transition hover:-translate-y-1 ${sel ? 'ring-2 ring-navy' : ''}`}>
+              <article key={j.id} onClick={() => setTargetId(j.id)} className={`tile group flex h-full cursor-pointer flex-col p-5 transition hover:-translate-y-1 ${sel ? 'ring-2 ring-navy' : ''}`}>
                 <div className="flex items-start justify-between">
                   <SourceBadge source={j.source} />
                   <button onClick={(e) => { e.stopPropagation(); toggleScrap(j.id) }} aria-label="스크랩" className="grid h-10 w-10 place-items-center rounded-full bg-bg hover:bg-sky">{Icon.heart(scraps.includes(j.id))}</button>
                 </div>
                 <div className="mt-4 text-xs font-semibold text-sub">{j.company} · {j.region}</div>
-                <div className="mt-1 min-h-[48px] text-lg font-extrabold leading-snug">{j.title}</div>
-                <div className="mt-3 flex flex-wrap gap-1">{j.skills.slice(0, 3).map((s) => <Chip key={s} tone={PROFILE.skills.includes(s) ? 'mint' : 'line'}>{s}</Chip>)}</div>
-                <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
+                <div className="mt-1 line-clamp-2 min-h-[56px] text-lg font-extrabold leading-snug">{j.title}</div>
+                <div className="mt-3 flex min-h-7 flex-wrap content-start gap-1">{j.skills.slice(0, 3).map((s) => <Chip key={s} tone={PROFILE.skills.includes(s) ? 'mint' : 'line'}>{s}</Chip>)}</div>
+                <div className="mt-auto flex items-center justify-between border-t border-line pt-4">
                   <div><div className="num text-2xl font-bold">{fit}%</div><div className={`text-[11px] font-semibold ${fit >= cutoff ? 'text-[#0b8a68]' : 'text-tie'}`}>{fit >= cutoff ? '합격선 도달' : `${cutoff - fit}점 부족`}</div></div>
                   {sel ? <Chip tone="navy">목표 공고</Chip> : <span className="text-xs text-sub">마감 {j.deadline}</span>}
                 </div>

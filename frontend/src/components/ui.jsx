@@ -71,7 +71,7 @@ const SOURCE_STYLE = {
   '워크넷': ['#fff3d6', '#8a5a00', '워크넷'],
   'HRD-Net': ['#efe6ff', '#5b2bb5', 'HRD-Net'],
 }
-export function SourceBadge({ source = '', className = 'h-12 w-14 px-1 text-[10px]' }) {
+export function SourceBadge({ source = '', className = 'min-h-12 w-fit min-w-14 px-2.5 py-2 text-xs' }) {
   const [bg, fg, label] = SOURCE_STYLE[source] || ['#eef0f6', '#4a4d6b', source || '기타']
   return <span className={`grid shrink-0 place-items-center rounded-2xl text-center font-bold leading-tight ${className}`} style={{ background: bg, color: fg }}>{label}</span>
 }
