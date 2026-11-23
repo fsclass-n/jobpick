@@ -23,6 +23,7 @@ SARAMIN_KEY = os.getenv("SARAMIN_ACCESS_KEY", "").strip()
 WORK24_KEY = os.getenv("WORK24_API_KEY", "").strip()
 DATA_GO_KR_KEY = os.getenv("DATA_GO_KR_API_KEY", "").strip()
 SEOUL_KEY = os.getenv("SEOUL_OPEN_API_KEY", "").strip()
+GG_KEY = os.getenv("GG_DATA_API_KEY", "").strip()
 
 SARAMIN_URL = "https://oapi.saramin.co.kr/job-search"
 WORKNET_URL = "https://openapi.work.go.kr/opi/opi/opia/wantedApi.do"
@@ -356,9 +357,62 @@ def collect_seoul(client: httpx.Client) -> tuple[list[dict], str]:
     return out, f"{len(out)}건"
 
 
+GG_SCAN_PAGES = 6   # 잡아바 최근 6,000건 스캔 (전체 46만+ 중 최신 순, pSize 최대 1000)
+
+
+def collect_gyeonggi(client: httpx.Client) -> tuple[list[dict], str]:
+    """경기도일자리재단 잡아바 채용정보 — openapi.gg.go.kr, data.gg.go.kr 개인 즉시 발급."""
+    if not GG_KEY:
+        return [], "GG_DATA_API_KEY 미설정"
+    import hashlib
+    out = []
+    for page in range(1, GG_SCAN_PAGES + 1):
+        r = client.get("https://openapi.gg.go.kr/GGJOBABARECRUSTM", params={
+            "KEY": GG_KEY, "Type": "json", "pIndex": page, "pSize": 1000,
+        })
+        r.raise_for_status()
+        parts = r.json().get("GGJOBABARECRUSTM") or []
+        rows: list[dict] = []
+        for part in parts:
+            if "row" in part:
+                rows = part["row"]
+            elif (part.get("RESULT") or {}).get("CODE") not in (None, "INFO-000"):
+                res = part.get("RESULT") or {}
+                if res.get("CODE") != "INFO-000":
+                    raise RuntimeError(f"경기데이터드림 API 오류 {res.get('CODE')}: {res.get('MESSAGE', '')[:60]}")
+        if not rows:
+            break
+        for row in rows:
+            title = (row.get("PBANC_CONT") or "").strip()
+            company = (row.get("ENTRPRS_NM") or "").strip()
+            field = row.get("RECRUT_FIELD_NM") or ""
+            if not company or not title or not _is_dev(f"{title} {field}"):
+                continue
+            url = (row.get("URL") or "").strip()
+            digest = hashlib.md5((url or f"{company}|{title}|{row.get('RCPT_END_DE', '')}").encode()).hexdigest()[:14]
+            out.append({
+                "external_id": f"jobaba:{digest}",
+                "company": company,
+                "title": title,
+                "region": "경기",
+                "career": row.get("CAREER_DIV") or "관계없음",
+                "size": "민간",
+                "source": "경기 잡아바",
+                "deadline": _deadline(row.get("RCPT_END_DE") or ""),
+                "skills": _skills(title, field, row.get("SALARY_COND") or ""),
+                "values": [field] if field else [],
+                "radar": {},
+                "url": url,
+            })
+        if len(out) >= 500:
+            break
+    return out, f"{len(out)}건"
+
+
 COLLECTORS = [
     ("나라일터", collect_narajater),
     ("서울 일자리플러스", collect_seoul),
+    ("경기 잡아바", collect_gyeonggi),
     ("사람인", collect_saramin),
     ("워크넷", collect_worknet),
     ("HRD-Net 훈련과정", collect_hrd),

@@ -135,7 +135,7 @@ export default function Admin() {
             <Tile className="p-6">
               <b>수집 관리</b>
               <ul className="mt-3 text-sm">
-                {[['대상', '나라일터 · 서울 일자리플러스 · 사람인 · 워크넷 · HRD-Net 훈련과정'], ['지역', '서울 · 경기 · 인천'], ['직군', '웹·IT 개발 전체 (훈련과정 포함)'], ['방식', '공식 오픈 API (수동 실행)']].map(([k, v]) => <li key={k} className="flex justify-between border-b border-line py-3 last:border-0"><span className="text-sub">{k}</span><b>{v}</b></li>)}
+                {[['대상', '나라일터 · 서울 일자리플러스 · 경기 잡아바 · 사람인 · 워크넷 · HRD-Net'], ['지역', '서울 · 경기 · 인천'], ['직군', '웹·IT 개발 전체 (훈련과정 포함)'], ['방식', '공식 오픈 API (수동 실행)']].map(([k, v]) => <li key={k} className="flex justify-between border-b border-line py-3 last:border-0"><span className="text-sub">{k}</span><b>{v}</b></li>)}
               </ul>
               <Btn variant="tie" className="mt-4" {...lock} onClick={() => write(async () => {
                 const res = await call('/api/admin/collect', { method: 'POST' })
@@ -149,7 +149,7 @@ export default function Admin() {
                     {Object.entries(collect.sources).map(([k, v]) => <li key={k}>{k}: {v}</li>)}
                   </ul>
                   {Object.values(collect.sources).some((v) => v.includes('미설정')) && (
-                    <p className="mt-2 text-xs text-tie">API 키가 없는 소스는 건너뜁니다. 개인 즉시 발급: DATA_GO_KR_API_KEY · SEOUL_OPEN_API_KEY / 기관 승인 필요: WORK24_API_KEY · SARAMIN_ACCESS_KEY</p>
+                    <p className="mt-2 text-xs text-tie">API 키가 없는 소스는 건너뜁니다. 개인 즉시 발급: DATA_GO_KR_API_KEY · SEOUL_OPEN_API_KEY · GG_DATA_API_KEY / 기관 승인 필요: WORK24_API_KEY · SARAMIN_ACCESS_KEY</p>
                   )}
                 </div>
               )}

@@ -66,6 +66,7 @@ export function Monogram({ name, seed = 0, className = 'h-12 w-12 text-lg' }) {
 const SOURCE_STYLE = {
   '나라일터': ['#e0f2ff', '#0b5c8f', '나라일터'],
   '서울 일자리플러스': ['#d9f7ee', '#0f7a5c', '서울 일자리'],
+  '경기 잡아바': ['#e0f7f4', '#0e7d6e', '경기 잡아바'],
   '사람인': ['#e9ebff', '#26286a', '사람인'],
   '워크넷': ['#fff3d6', '#8a5a00', '워크넷'],
   'HRD-Net': ['#efe6ff', '#5b2bb5', 'HRD-Net'],
