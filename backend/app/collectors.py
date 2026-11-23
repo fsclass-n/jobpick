@@ -21,6 +21,8 @@ from .data import PROFILE_SKILLS
 
 SARAMIN_KEY = os.getenv("SARAMIN_ACCESS_KEY", "").strip()
 WORK24_KEY = os.getenv("WORK24_API_KEY", "").strip()
+DATA_GO_KR_KEY = os.getenv("DATA_GO_KR_API_KEY", "").strip()
+SEOUL_KEY = os.getenv("SEOUL_OPEN_API_KEY", "").strip()
 
 SARAMIN_URL = "https://oapi.saramin.co.kr/job-search"
 WORKNET_URL = "https://openapi.work.go.kr/opi/opi/opia/wantedApi.do"
@@ -30,6 +32,13 @@ HRD_URL = os.getenv("HRD_API_URL", "https://www.hrd.go.kr/jsp/HRDP/HRDPO00/HRDPO
 SARAMIN_LOCS = "101000 102000 108000"          # 서울전체 경기전체 인천전체
 WORKNET_REGIONS = "11000|41000|28000"          # 서울|경기|인천
 HRD_AREAS = [("11", "서울"), ("41", "경기"), ("28", "인천")]
+
+# 웹·IT 개발 관련 직종 판별(나라일터/서울 공고 제목·직종명 필터)
+DEV_RE = re.compile(
+    r"개발|프로그래머|웹|소프트웨어|\bSW\b|\bIT\b|정보통신|전산|컴퓨터|데이터|"
+    r"\bDB\b|시스템|네트워크|보안|인공지능|\bAI\b|코딩|플랫폼|서버|디지털|엔지니어|기술",
+    re.IGNORECASE,
+)
 
 WORKNET_KEYWORDS = [
     "웹개발", "웹 개발", "프론트엔드", "백엔드", "풀스택", "웹프로그래머",
@@ -227,7 +236,91 @@ def collect_hrd(client: httpx.Client) -> tuple[list[dict], str]:
     return out, f"{len(out)}건"
 
 
+def collect_narajater(client: httpx.Client) -> tuple[list[dict], str]:
+    """인사혁신처 공공취업정보(나라일터) — data.go.kr 일반 인증키, 개인 자동승인."""
+    if not DATA_GO_KR_KEY:
+        return [], "DATA_GO_KR_API_KEY 미설정"
+    wanted = {"서울", "경기", "인천"}
+    out: dict[str, dict] = {}
+    for page in range(1, 6):                     # 최대 500건 중 수도권·개발직만 선별
+        r = client.get("https://apis.data.go.kr/1051000/recruitment/list", params={
+            "serviceKey": DATA_GO_KR_KEY, "pageNo": page, "numOfRows": 100,
+        })
+        r.raise_for_status()
+        root = ET.fromstring(r.text)
+        code = root.findtext(".//header/resultCode") or "00"
+        if code not in ("00", "03"):             # 03: 결과 없음
+            raise RuntimeError(f"나라일터 API 오류 resultCode={code}")
+        items = root.findall(".//body/items/item")
+        if not items:
+            break
+        for it in items:
+            region = _region(it.findtext("workRgnNmLst") or "")
+            if region not in wanted:
+                continue
+            title = (it.findtext("recrutTitle") or "").strip()
+            ncs = it.findtext("ncsCdNmLst") or ""
+            inst = (it.findtext("instNm") or "").strip()
+            if not title or not inst or not DEV_RE.search(f"{title} {ncs}"):
+                continue
+            sn = it.findtext("recrutPblntSn") or f"{inst}-{title}"
+            out[sn] = {
+                "external_id": f"narajater:{sn}",
+                "company": inst,
+                "title": title,
+                "region": region,
+                "career": it.findtext("hireTypeNmLst") or "관계없음",
+                "size": "공공",
+                "source": "나라일터",
+                "deadline": _deadline(it.findtext("recrutNopendYmd") or ""),
+                "skills": _skills(title, ncs),
+                "values": [ncs] if ncs else [],
+                "radar": {},
+                "url": "",
+            }
+    return list(out.values()), f"{len(out)}건"
+
+
+def collect_seoul(client: httpx.Client) -> tuple[list[dict], str]:
+    """서울 일자리플러스센터 채용정보 — openAPI.seoul.go.kr 개인 즉시 발급."""
+    if not SEOUL_KEY:
+        return [], "SEOUL_OPEN_API_KEY 미설정"
+    r = client.get(f"http://openapi.seoul.go.kr:8088/{SEOUL_KEY}/json/GetJobInfo/1/1000/")
+    r.raise_for_status()
+    data = r.json().get("GetJobInfo", {})
+    code = (data.get("RESULT") or {}).get("CODE", "INFO-000")
+    if code == "INFO-200":
+        return [], "데이터 없음"
+    if code != "INFO-000":
+        raise RuntimeError(f"서울 열린데이터 API 오류 {code}")
+    out = []
+    for row in data.get("row") or []:
+        job_nm = row.get("JOBCODE_NM") or ""
+        duty = row.get("DTY_CN") or ""
+        company = (row.get("CMPNY_NM") or "").strip()
+        if not company or not DEV_RE.search(f"{job_nm} {duty}"):
+            continue
+        reg_no = row.get("JO_REGIST_NO") or row.get("JO_REQST_CO_NM") or f"{company}-{job_nm}"
+        out.append({
+            "external_id": f"seoul:{reg_no}",
+            "company": company,
+            "title": (row.get("RCRIT_TITLE") or job_nm or "채용").strip(),
+            "region": "서울",
+            "career": row.get("CAREER_CND_NM") or "관계없음",
+            "size": row.get("EMPLYM_STLE_CMMN_MM") or "민간",
+            "source": "서울 일자리플러스",
+            "deadline": _deadline(row.get("RCRIT_END_DE") or ""),
+            "skills": _skills(job_nm, duty),
+            "values": [],
+            "radar": {},
+            "url": (row.get("JO_REGISTER_URL") or "").strip(),
+        })
+    return out, f"{len(out)}건"
+
+
 COLLECTORS = [
+    ("나라일터", collect_narajater),
+    ("서울 일자리플러스", collect_seoul),
     ("사람인", collect_saramin),
     ("워크넷", collect_worknet),
     ("HRD-Net 훈련과정", collect_hrd),
