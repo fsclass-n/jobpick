@@ -17,7 +17,7 @@ export default function Journey() {
   return (
     <div className="wrap pb-10">
       <JourneyBar />
-      <PageHead step="My Journey" title={`${user?.name || PROFILE.name}님의 Pick 여정`} desc={`목표 공고 ${target.company} · ${target.title} · Pick ${scraps.length}건`} />
+      <PageHead step="My Journey" title={`${user?.name || PROFILE.name}님의 Pick 여정`} desc={`목표 공고 ${target ? `${target.company} · ${target.title}` : '미설정'} · Pick ${scraps.length}건`} />
       <div className="grid gap-4 lg:grid-cols-12">
         <Tile className="flex flex-col items-center p-8 lg:col-span-4">
           <Ring value={pick} size={180} stroke={8} label="Pick Score" color="#ff5a3c" />

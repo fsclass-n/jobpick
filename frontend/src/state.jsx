@@ -43,7 +43,7 @@ export function AppProvider({ children }) {
     let live = true
     api('/api/jobs', { token })
       .then((rows) => {
-        if (!live || !Array.isArray(rows) || rows.length === 0) return
+        if (!live || !Array.isArray(rows)) return
         setJobs(rows.map((j) => ({ deadline: '', radar: {}, ...j })))
       })
       .catch(() => setJobs(JOBS))

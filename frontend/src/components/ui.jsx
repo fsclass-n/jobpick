@@ -63,6 +63,18 @@ export function Monogram({ name, seed = 0, className = 'h-12 w-12 text-lg' }) {
   return <span className={`num grid shrink-0 place-items-center rounded-2xl font-bold ${className}`} style={{ background: bg, color: fg }}>{name[0]}</span>
 }
 
+const SOURCE_STYLE = {
+  '나라일터': ['#e0f2ff', '#0b5c8f', '나라일터'],
+  '서울 일자리플러스': ['#d9f7ee', '#0f7a5c', '서울 일자리'],
+  '사람인': ['#e9ebff', '#26286a', '사람인'],
+  '워크넷': ['#fff3d6', '#8a5a00', '워크넷'],
+  'HRD-Net': ['#efe6ff', '#5b2bb5', 'HRD-Net'],
+}
+export function SourceBadge({ source = '', className = 'h-12 w-14 px-1 text-[10px]' }) {
+  const [bg, fg, label] = SOURCE_STYLE[source] || ['#eef0f6', '#4a4d6b', source || '기타']
+  return <span className={`grid shrink-0 place-items-center rounded-2xl text-center font-bold leading-tight ${className}`} style={{ background: bg, color: fg }}>{label}</span>
+}
+
 export function Ring({ value, size = 120, stroke = 9, label, color = '#19d3a2', track = '#e6e7f0', children }) {
   const r = 50 - stroke / 2, c = 2 * Math.PI * r
   return (

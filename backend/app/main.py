@@ -7,7 +7,6 @@ load_dotenv()
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-from .data import JOBS, USERS  # noqa: E402
 from .db import init_db  # noqa: E402
 from .routers import admin, admin_auth, api, auth, oauth  # noqa: E402
 
@@ -26,7 +25,7 @@ app.include_router(api)
 app.include_router(admin_auth)
 app.include_router(admin)
 
-init_db(JOBS, USERS)
+init_db([], [])
 
 
 @app.get("/")

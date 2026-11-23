@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import JourneyBar from '../components/JourneyBar'
-import { Chip, Icon, Monogram, PageHead, Radar, Ring, Tile } from '../components/ui'
+import { Chip, Icon, PageHead, Radar, Ring, SourceBadge, Tile } from '../components/ui'
 import { PROFILE } from '../data/mock'
 import { useApp } from '../state'
 
@@ -35,11 +35,11 @@ export default function Match() {
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {list.length === 0 && <Tile className="p-10 text-center text-sm text-sub sm:col-span-2 xl:col-span-3">조건에 맞는 공고가 없습니다.</Tile>}
           {list.map((j) => {
-            const fit = fitOf(j), sel = j.id === target.id
+            const fit = fitOf(j), sel = target && j.id === target.id
             return (
               <article key={j.id} onClick={() => setTargetId(j.id)} className={`tile group cursor-pointer p-5 transition hover:-translate-y-1 ${sel ? 'ring-2 ring-navy' : ''}`}>
                 <div className="flex items-start justify-between">
-                  <Monogram name={j.company} seed={j.id} />
+                  <SourceBadge source={j.source} />
                   <button onClick={(e) => { e.stopPropagation(); toggleScrap(j.id) }} aria-label="스크랩" className="grid h-10 w-10 place-items-center rounded-full bg-bg hover:bg-sky">{Icon.heart(scraps.includes(j.id))}</button>
                 </div>
                 <div className="mt-4 text-xs font-semibold text-sub">{j.company} · {j.region}</div>
@@ -55,13 +55,17 @@ export default function Match() {
         </section>
         <aside className="lg:sticky lg:top-24 lg:h-fit">
           <Tile className="p-6">
-            <div className="flex items-center gap-3"><Monogram name={target.company} seed={target.id} /><div><div className="text-xs text-sub">목표 공고</div><div className="font-extrabold">{target.company}</div></div></div>
-            <div className="mt-1 text-sm text-sub">{target.title}</div>
-            <Radar data={target.radar} />
-            <div className="flex items-center gap-4 rounded-3xl bg-bg p-4">
-              <Ring value={fitOf(target)} size={72} stroke={11} label="적합도" />
-              <div className="text-sm"><div className="text-xs text-sub">인재상</div><b>{target.values.join(' · ')}</b></div>
-            </div>
+            {target ? (
+              <>
+                <div className="flex items-center gap-3"><SourceBadge source={target.source} /><div><div className="text-xs text-sub">목표 공고</div><div className="font-extrabold">{target.company}</div></div></div>
+                <div className="mt-1 text-sm text-sub">{target.title}</div>
+                <Radar data={target.radar} />
+                <div className="flex items-center gap-4 rounded-3xl bg-bg p-4">
+                  <Ring value={fitOf(target)} size={72} stroke={11} label="적합도" />
+                  <div className="text-sm"><div className="text-xs text-sub">인재상</div><b>{target.values.join(' · ')}</b></div>
+                </div>
+              </>
+            ) : <div className="py-8 text-center text-sm text-sub">표시할 공고가 없습니다.<br />관리자가 공고를 수집하면 여기에 나타납니다.</div>}
           </Tile>
         </aside>
       </div>

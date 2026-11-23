@@ -84,6 +84,9 @@ def init_db(seed_jobs: list[dict], seed_users: list[dict]) -> None:
         if "url" not in cols:
             conn.execute(text("ALTER TABLE jobs ADD COLUMN url VARCHAR(500) DEFAULT ''"))
     with SessionLocal() as db:
+        # 레거시 가짜 시드 정리 — 수집본(external_id)/관리자 등록본/실제 소셜 회원은 유지
+        db.query(Job).filter(Job.external_id.is_(None), Job.source != "관리자 등록").delete(synchronize_session=False)
+        db.query(User).filter(User.provider.is_(None)).delete(synchronize_session=False)
         for j in seed_jobs:
             row = db.get(Job, j["id"])
             if row is None:

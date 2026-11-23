@@ -198,8 +198,8 @@ function Bento() {
         </Reveal>
         <Reveal className="md:col-span-3 lg:col-span-5" delay={80}>
           <Link to="/match" className="tile flex h-full items-center gap-4 p-6 transition hover:-translate-y-1">
-            <div className="flex-1"><div className="kicker text-tie">01 · Match</div><div className="mt-1 text-xl font-extrabold">공고별 적합도와<br />합격까지 남은 점수</div><p className="mt-2 text-xs text-sub">{target.company} · {target.title}</p></div>
-            <div className="w-40"><Radar data={target.radar} size={200} /></div>
+            <div className="flex-1"><div className="kicker text-tie">01 · Match</div><div className="mt-1 text-xl font-extrabold">공고별 적합도와<br />합격까지 남은 점수</div><p className="mt-2 text-xs text-sub">{target?.company} · {target?.title}</p></div>
+            <div className="w-40"><Radar data={target?.radar || {}} size={200} /></div>
           </Link>
         </Reveal>
         <Reveal className="md:col-span-3 lg:col-span-5" delay={120}>
