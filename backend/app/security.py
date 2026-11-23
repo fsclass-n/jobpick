@@ -27,17 +27,20 @@ def issue(role: str, sub: str) -> str:
     return jwt.encode({"sub": sub, "role": role, "exp": exp}, ADMIN_SECRET if admin else USER_SECRET, algorithm="HS256")
 
 
-def check_admin_key(key: str, client: str) -> None:
-    expected = os.getenv("ADMIN_ACCESS_KEY", "")
-    if not expected:
-        raise HTTPException(503, "ADMIN_ACCESS_KEY가 서버에 설정되지 않았습니다.")
+def check_admin_login(email: str, password: str, client: str) -> None:
+    expected_email = os.getenv("ADMIN_EMAIL", "")
+    expected_password = os.getenv("ADMIN_PASSWORD", "")
+    if not expected_email or not expected_password:
+        raise HTTPException(503, "관리자 계정(ADMIN_EMAIL/ADMIN_PASSWORD)이 서버에 설정되지 않았습니다.")
     now = time.time()
     recent = [t for t in _failures.get(client, []) if now - t < LOCK_SECONDS]
     if len(recent) >= MAX_FAILURES:
         raise HTTPException(429, f"로그인 {MAX_FAILURES}회 실패로 잠겼습니다. 잠시 후 다시 시도하세요.")
-    if not hmac.compare_digest(key.encode(), expected.encode()):
+    ok = hmac.compare_digest(email.encode(), expected_email.encode()) and \
+        hmac.compare_digest(password.encode(), expected_password.encode())
+    if not ok:
         _failures[client] = recent + [now]
-        raise HTTPException(401, "관리자 키가 올바르지 않습니다.")
+        raise HTTPException(401, "관리자 계정 정보가 올바르지 않습니다.")
     _failures.pop(client, None)
 
 

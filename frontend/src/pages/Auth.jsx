@@ -128,14 +128,15 @@ export function Login() {
 export function AdminLogin() {
   const { login, role } = useApp()
   const nav = useNavigate()
-  const [key, setKey] = useState('')
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   if (role === 'ADMIN') return <Navigate to="/admin" replace />
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErr('')
     try {
-      const r = await api('/api/admin/login', { method: 'POST', body: { access_key: key } })
+      const r = await api('/api/admin/login', { method: 'POST', body: { email, password: pw } })
       login('ADMIN', r.access_token)
       nav('/admin', { replace: true })
     } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
@@ -149,11 +150,13 @@ export function AdminLogin() {
           <Logo light />
           <Chip tone="tie" className="mt-8">관리자 전용</Chip>
           <h1 className="mt-3 text-3xl font-extrabold">관리자 로그인</h1>
-          <p className="mt-2 text-sm text-white/60">서버 환경 변수 <code className="text-mint">ADMIN_ACCESS_KEY</code>와 일치하는 키로만 진입합니다. 모든 데이터의 생성·수정·삭제 권한이 부여됩니다.</p>
-          <label className="mt-8 block text-xs font-semibold text-white/70" htmlFor="key">관리자 키</label>
-          <input id="key" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} required className="mt-1.5 h-12 w-full rounded-2xl bg-white/10 px-4 font-mono text-sm outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-mint" />
+          <p className="mt-2 text-sm text-white/60">서버 환경 변수 <code className="text-mint">ADMIN_EMAIL</code>·<code className="text-mint">ADMIN_PASSWORD</code>에 등록된 계정으로만 진입합니다. 모든 데이터의 생성·수정·삭제 권한이 부여됩니다.</p>
+          <label className="mt-8 block text-xs font-semibold text-white/70" htmlFor="aemail">관리자 이메일</label>
+          <input id="aemail" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1.5 h-12 w-full rounded-2xl bg-white/10 px-4 text-sm outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-mint" />
+          <label className="mt-4 block text-xs font-semibold text-white/70" htmlFor="apw">비밀번호</label>
+          <input id="apw" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} required className="mt-1.5 h-12 w-full rounded-2xl bg-white/10 px-4 text-sm outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-mint" />
           {err && <p className="mt-3 text-xs text-tie">{err}</p>}
-          <Btn variant="mint" size="lg" disabled={busy || !key} className="mt-6 w-full">{busy ? '확인 중… (서버 기동 최대 1분)' : '관리자 진입'}</Btn>
+          <Btn variant="mint" size="lg" disabled={busy || !email || !pw} className="mt-6 w-full">{busy ? '확인 중… (서버 기동 최대 1분)' : '관리자 진입'}</Btn>
           <p className="mt-6 text-[11px] text-white/40">5회 실패 시 15분간 잠깁니다. 테스트 관리자는 <Link to="/login" className="underline">로그인 화면</Link>에서 진입하세요.</p>
         </form>
       </div>

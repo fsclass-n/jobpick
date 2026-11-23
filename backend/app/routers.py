@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from .data import CUTOFF, PROFILE_SKILLS
 from .db import Job, User, get_db, job_out, user_out
-from .security import USER_SECRET, check_admin_key, issue, require_admin_view, require_user
+from .security import USER_SECRET, check_admin_login, issue, require_admin_view, require_user
 
 auth = APIRouter(prefix="/api/auth", tags=["auth"])
 oauth = APIRouter(prefix="/api/auth/oauth", tags=["oauth"])
@@ -153,13 +153,14 @@ def oauth_callback(provider: str, request: Request, code: str = "", state: str =
 
 
 class AdminLogin(BaseModel):
-    access_key: str = Field(min_length=1, max_length=256)
+    email: str = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=1, max_length=256)
 
 
 @admin_auth.post("/login")
 def admin_login(body: AdminLogin, request: Request):
-    check_admin_key(body.access_key, request.client.host if request.client else "unknown")
-    return {"access_token": issue("ADMIN", "admin"), "role": "ADMIN", "read_only": False}
+    check_admin_login(body.email, body.password, request.client.host if request.client else "unknown")
+    return {"access_token": issue("ADMIN", body.email), "role": "ADMIN", "read_only": False}
 
 
 @admin.get("/me")
