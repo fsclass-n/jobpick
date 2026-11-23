@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import JourneyBar from '../components/JourneyBar'
 import { Btn, Chip, Monogram, PageHead, Ring, Tile } from '../components/ui'
-import { JOBS, SKILL_PLAN } from '../data/mock'
+import { SKILL_PLAN } from '../data/mock'
 import { useApp } from '../state'
 
 export default function Gap() {
-  const { gaps, freq, owned, setOwned, scraps, coverage } = useApp()
+  const { gaps, freq, owned, setOwned, scraps, coverage, jobs } = useApp()
   const n = scraps.length
   let week = 1
   const plan = gaps.map(([s, c]) => {
@@ -16,7 +16,7 @@ export default function Gap() {
   })
   const max = Math.max(1, ...Object.values(freq))
   const all = Object.entries(freq).sort((a, b) => b[1] - a[1])
-  const picked = JOBS.filter((j) => scraps.includes(j.id))
+  const picked = jobs.filter((j) => scraps.includes(j.id))
 
   return (
     <div className="wrap pb-10">

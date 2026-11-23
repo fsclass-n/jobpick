@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import JourneyBar from '../components/JourneyBar'
 import { Chip, Icon, Monogram, PageHead, Radar, Ring, Tile } from '../components/ui'
-import { JOBS, PROFILE } from '../data/mock'
+import { PROFILE } from '../data/mock'
 import { useApp } from '../state'
 
 const FILTERS = [['region', ['서울', '경기', '부산']], ['career', ['신입', '경력 1~3년']], ['size', ['대기업', '중견', '공공기관', '스타트업']]]
 const SORTS = [['fit', '적합도순'], ['deadline', '마감임박순'], ['company', '기업명순']]
 
 export default function Match() {
-  const { fitOf, target, setTargetId, scraps, toggleScrap, cutoff } = useApp()
+  const { fitOf, target, setTargetId, scraps, toggleScrap, cutoff, jobs } = useApp()
   const [f, setF] = useState({ q: '', region: '', career: '', size: '' })
   const [sort, setSort] = useState('fit')
-  const list = JOBS.filter((j) =>
+  const list = jobs.filter((j) =>
     (!f.q || (j.title + j.company + j.skills.join()).toLowerCase().includes(f.q.toLowerCase())) && FILTERS.every(([k]) => !f[k] || j[k] === f[k]))
     .sort((a, b) => (sort === 'fit' ? fitOf(b) - fitOf(a) : sort === 'deadline' ? a.deadline.localeCompare(b.deadline) : a.company.localeCompare(b.company)))
 

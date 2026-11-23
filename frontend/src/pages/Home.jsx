@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IMG } from '../data/credits'
-import { JOBS, PROFILE } from '../data/mock'
+import { PROFILE } from '../data/mock'
 import { useApp } from '../state'
 import { Btn, Chip, Icon, Monogram, Radar, Reveal, Ring, Tile, useCountUp } from '../components/ui'
 
 const THRESHOLD = 110
 
 function SwipeDeck() {
-  const { fitOf, scraps, toggleScrap, coverage, role } = useApp()
+  const { fitOf, scraps, toggleScrap, coverage, role, jobs: JOBS } = useApp()
   const [idx, setIdx] = useState(0)
   const [log, setLog] = useState([])
   const [drag, setDrag] = useState({ x: 0, active: false })

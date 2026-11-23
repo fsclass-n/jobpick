@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { api } from './api'
 import { CUTOFF, ESSAYS, JOBS } from './data/mock'
 
 const KEY = { USER: 'jobpick.user.token', TEST_ADMIN: 'jobpick.testadmin.token', ADMIN: 'jobpick.admin.token' }
@@ -12,6 +13,7 @@ const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)))
 
 export function AppProvider({ children }) {
   const [role, setRole] = useState(() => sessionStorage.getItem(ROLE_KEY))
+  const [jobs, setJobs] = useState(JOBS)
   const [targetId, setTargetId] = useState(1)
   const [scraps, setScraps] = useState([])
   const [owned, setOwned] = useState([])
@@ -33,15 +35,30 @@ export function AppProvider({ children }) {
     setRole(null)
   }
 
+  // 서버에 저장된 실제 공고를 불러온다. 실패/데모 모드면 내장 샘플로 대체
+  useEffect(() => {
+    if (role !== 'USER') return undefined
+    const token = sessionStorage.getItem(KEY.USER)
+    if (!token || token.startsWith('mock-')) { setJobs(JOBS); return undefined }
+    let live = true
+    api('/api/jobs', { token })
+      .then((rows) => {
+        if (!live || !Array.isArray(rows) || rows.length === 0) return
+        setJobs(rows.map((j) => ({ deadline: '', radar: {}, ...j })))
+      })
+      .catch(() => setJobs(JOBS))
+    return () => { live = false }
+  }, [role])
+
   const value = useMemo(() => {
-    const target = JOBS.find((j) => j.id === targetId)
-    const baseFit = (j) => Object.values(j.radar).reduce((a, b) => a + b, 0) / 5
+    const target = jobs.find((j) => j.id === targetId) || jobs[0]
+    const baseFit = (j) => (j.radar ? Object.values(j.radar).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(j.radar).length) : (j.fit || 0))
     const fitOf = (j) => clamp(baseFit(j))
     // 서류 적합도: 수락한 문항 비율만큼 목표 공고와의 적합도가 채워진다 (미작성 시 0)
     const essayDone = Object.values(accepted).filter(Boolean).length
-    const match = essayDone === 0 ? 0 : clamp((baseFit(target) * essayDone) / ESSAYS.length)
+    const match = !target || essayDone === 0 ? 0 : clamp((baseFit(target) * essayDone) / ESSAYS.length)
 
-    const scrapped = JOBS.filter((j) => scraps.includes(j.id))
+    const scrapped = jobs.filter((j) => scraps.includes(j.id))
     const freq = {}
     scrapped.forEach((j) => j.skills.forEach((s) => { freq[s] = (freq[s] || 0) + 1 }))
     const total = Object.values(freq).reduce((a, b) => a + b, 0) || 1
@@ -59,9 +76,9 @@ export function AppProvider({ children }) {
       user: role === 'USER' ? JSON.parse(sessionStorage.getItem(INFO_KEY) || 'null') : null,
       target, setTargetId, scraps, toggleScrap, owned, setOwned, accepted, setAccepted,
       interview, setInterview, fitOf, match, coverage, gaps, freq, rehearse, pick, distance: CUTOFF - pick, cutoff: CUTOFF,
-      essays: ESSAYS,
+      essays: ESSAYS, jobs,
     }
-  }, [role, targetId, scraps, owned, accepted, interview])
+  }, [role, jobs, targetId, scraps, owned, accepted, interview])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

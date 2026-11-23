@@ -187,8 +187,10 @@ class JobIn(BaseModel):
     career: str = "신입"
     size: str = "중견"
     source: str = "관리자 등록"
+    deadline: str = ""
     skills: list[str] = []
     values: list[str] = []
+    radar: dict = {}
 
 
 @admin.get("/jobs")
