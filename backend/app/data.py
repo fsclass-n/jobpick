@@ -11,3 +11,9 @@ JOBS = [
     {"id": 4, "company": "경기도시공사", "title": "데이터 기획 (공공)", "region": "경기", "career": "신입", "size": "공공기관",
      "source": "지방공공기관", "skills": ["Excel", "통계 분석", "공공데이터", "SQL", "보고서 작성"], "values": ["공익", "청렴", "책임감"]},
 ]
+
+USERS = [
+    {"email": "user01@example.com", "name": "김픽", "role": "USER", "joined": "2026-11-02"},
+    {"email": "user02@example.com", "name": "이커리어", "role": "USER", "joined": "2026-11-05"},
+    {"email": "qa@example.com", "name": "QA 담당", "role": "TEST_ADMIN", "joined": "2026-11-12"},
+]

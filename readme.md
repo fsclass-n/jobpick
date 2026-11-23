@@ -33,7 +33,8 @@ React(Vite)·React Router·Tailwind v4 / FastAPI·PyJWT(권한별 비밀키 분�
 | 구분 | 코드 | 로그인 | 비고 |
 |---|---|---|---|
 | 일반 사용자 | `USER` | `/login` (샘플 데이터 체험 가능) | 체험 모드는 서버 저장 없음 |
-| 정식 관리자 | `ADMIN` | `/admin/login` (링크 비노출) | TOTP 필수, 별도 JWT 비밀키 |
+| 테스트 관리자 | `TEST_ADMIN` | `/login` 테스트 관리자 버튼 | 관리자 화면 읽기 전용 (변경 요청 서버 403) |
+| 실제 관리자 | `ADMIN` | `/admin/login` (링크 비노출) | `.env`의 `ADMIN_ACCESS_KEY`로 진입, 전체 CRUD |
 
 ## 로컬 실행
 ```bash

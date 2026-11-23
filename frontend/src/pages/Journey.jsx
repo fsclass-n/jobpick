@@ -1,41 +1,47 @@
 import { Link } from 'react-router-dom'
-import { JourneyTracker } from '../components/Layout'
-import { Card, Line } from '../components/ui'
+import { JourneyBar } from '../components/Layout'
+import { Line, PageHead, Panel } from '../components/ui'
 import { MY_TREND, PROFILE } from '../data/mock'
 import { useApp } from '../state'
 
 export default function Journey() {
-  const { pick, match, coverage, rehearse, target, gaps } = useApp()
+  const { pick, match, coverage, rehearse, target, gaps, scraps } = useApp()
   const trend = [...MY_TREND, pick]
-  const parts = [['서류 적합도 (50%)', match, '/match'], ['역량 커버리지 (30%)', coverage, '/gap'], ['면접 준비도 (20%)', rehearse, '/rehearse']]
+  const parts = [['서류 적합도', '50%', match, '/match'], ['역량 커버리지', '30%', coverage, '/gap'], ['면접 준비도', '20%', rehearse, '/rehearse']]
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <JourneyTracker />
-      <h1 className="font-display text-2xl font-extrabold">{PROFILE.name}님의 Pick 여정</h1>
-      <p className="mb-6 text-sm text-slate-500">목표: {target.company} · {target.title}</p>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <h2 className="mb-3 font-bold">Pick Score 구성</h2>
-          {parts.map(([l, v, to]) => (
-            <Link key={l} to={to} className="mb-3 block">
-              <div className="mb-1 flex justify-between text-sm"><span>{l}</span><b>{v}</b></div>
-              <div className="h-2.5 rounded-full bg-slate-100"><div className="h-2.5 rounded-full bg-brand" style={{ width: `${v}%`, transition: 'width .6s' }} /></div>
+    <div className="wrap pb-10">
+      <JourneyBar />
+      <PageHead no="05" en="My Journey" ko={`${PROFILE.name}님의 Pick 여정`} desc={`목표 공고 ${target.company} · ${target.title} · 스크랩 ${scraps.length}건`} />
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <Panel className="p-6 lg:col-span-1">
+          <div className="eyebrow mb-4">Score breakdown</div>
+          {parts.map(([l, w, v, to]) => (
+            <Link key={l} to={to} className="mb-5 block group">
+              <div className="mb-1 flex justify-between text-sm"><span className="group-hover:underline">{l} <span className="text-mute">({w})</span></span><b className="font-serif text-lg">{v}</b></div>
+              <div className="h-2 bg-line"><div className="h-2 bg-ink" style={{ width: `${v}%`, transition: 'width .6s' }} /></div>
             </Link>
           ))}
-        </Card>
-        <Card>
-          <h2 className="mb-3 font-bold">점수 변화 추이</h2>
+        </Panel>
+        <Panel className="p-6 lg:col-span-2">
+          <div className="eyebrow mb-2">Trend</div>
           <Line data={trend} />
-          <div className="text-xs text-slate-400">최근 {trend.length}회 기록 (샘플 데이터 + 현재 세션)</div>
-        </Card>
-        <Card className="md:col-span-2">
-          <h2 className="mb-2 font-bold">다음 추천 행동</h2>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
-            {gaps[0] && <li>가장 큰 갭 <b>{gaps[0][0]}</b>을(를) 보완하세요 → <Link className="text-brand" to="/gap">갭 로드맵</Link></li>}
-            <li>자소서 문항 제안을 수락해 적합도를 올리세요 → <Link className="text-brand" to="/rewrite">리라이팅</Link></li>
-            {rehearse === 0 && <li>아직 모의면접을 진행하지 않았습니다 → <Link className="text-brand" to="/rehearse">시작하기</Link></li>}
-          </ul>
-        </Card>
+          <div className="text-[11px] text-mute">최근 {trend.length}회 (샘플 기록 + 현재 세션)</div>
+        </Panel>
+        <Panel className="p-6 lg:col-span-3">
+          <div className="eyebrow mb-4">Next actions</div>
+          <ol className="grid gap-4 md:grid-cols-3">
+            {[
+              gaps[0] && ['가장 큰 갭 보완', `${gaps[0][0]} 역량을 채우세요.`, '/gap'],
+              ['자소서 제안 수락', '문항별 AI 제안으로 적합도를 올리세요.', '/rewrite'],
+              rehearse === 0 && ['모의면접 시작', '아직 면접 준비도가 0점입니다.', '/rehearse'],
+            ].filter(Boolean).map(([t, d, to], k) => (
+              <li key={t}><Link to={to} className="block border border-ink p-5 hover:bg-pick">
+                <div className="font-serif text-3xl font-black">0{k + 1}</div>
+                <div className="mt-2 font-bold">{t}</div><div className="text-sm text-mute">{d}</div>
+              </Link></li>
+            ))}
+          </ol>
+        </Panel>
       </div>
     </div>
   )

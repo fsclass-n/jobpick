@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import { CUTOFF, ESSAYS, JOBS, PROFILE } from './data/mock'
 
-export const TOKEN_KEYS = { USER: 'jobpick.user.token', ADMIN: 'jobpick.admin.token' }
+const KEY = { USER: 'jobpick.user.token', TEST_ADMIN: 'jobpick.testadmin.token', ADMIN: 'jobpick.admin.token' }
 const ROLE_KEY = 'jobpick.role'
 
 const Ctx = createContext(null)
@@ -17,13 +17,14 @@ export function AppProvider({ children }) {
   const [accepted, setAccepted] = useState({})
   const [interview, setInterview] = useState([])
 
-  const login = (r) => {
-    sessionStorage.setItem(TOKEN_KEYS[r], `mock-${r.toLowerCase()}-token`)
+  const login = (r, token = `mock-${r.toLowerCase()}`) => {
+    Object.values(KEY).forEach((k) => sessionStorage.removeItem(k))
+    sessionStorage.setItem(KEY[r], token)
     sessionStorage.setItem(ROLE_KEY, r)
     setRole(r)
   }
   const logout = () => {
-    Object.values(TOKEN_KEYS).forEach((k) => sessionStorage.removeItem(k))
+    Object.values(KEY).forEach((k) => sessionStorage.removeItem(k))
     sessionStorage.removeItem(ROLE_KEY)
     setRole(null)
   }
@@ -37,7 +38,7 @@ export function AppProvider({ children }) {
 
     const scrapped = JOBS.filter((j) => scraps.includes(j.id))
     const freq = {}
-    scrapped.forEach((j) => j.skills.forEach((s) => (freq[s] = (freq[s] || 0) + 1)))
+    scrapped.forEach((j) => j.skills.forEach((s) => { freq[s] = (freq[s] || 0) + 1 }))
     const total = Object.values(freq).reduce((a, b) => a + b, 0) || 1
     const have = Object.entries(freq).filter(([s]) => owned.includes(s)).reduce((a, [, c]) => a + c, 0)
     const coverage = clamp((have / total) * 100)
@@ -45,9 +46,12 @@ export function AppProvider({ children }) {
 
     const rehearse = interview.length ? clamp(interview.reduce((a, b) => a + b, 0) / interview.length) : 0
     const pick = clamp(match * 0.5 + coverage * 0.3 + rehearse * 0.2)
+    const toggleScrap = (id) => setScraps((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
 
     return {
-      role, login, logout, target, setTargetId, scraps, setScraps, owned, setOwned, accepted, setAccepted,
+      role, isAdmin: role === 'ADMIN' || role === 'TEST_ADMIN', readOnly: role === 'TEST_ADMIN',
+      token: role ? sessionStorage.getItem(KEY[role]) : null, login, logout,
+      target, setTargetId, scraps, toggleScrap, owned, setOwned, accepted, setAccepted,
       interview, setInterview, fitOf, match, coverage, gaps, freq, rehearse, pick, distance: CUTOFF - pick, cutoff: CUTOFF,
       essays: ESSAYS,
     }

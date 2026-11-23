@@ -2,7 +2,9 @@
 
 ## 서비스 콘셉트
 - jobpick = Pick 여정: **Match**(공고 매칭·합격 거리) → **Gap**(갭 로드맵) → **Rewrite**(리라이팅 스튜디오) → **Rehearse**(모의면접), 단계별 결과를 **Pick Score**(적합도 50 + 역량 커버리지 30 + 면접 준비도 20)로 통합
-- 권한은 `USER`(체험 모드 포함)·`ADMIN`(TOTP 필수) 2종. 테스트 관리자/샌드박스는 폐지
+- 권한 3종: `USER`(체험 모드) / `TEST_ADMIN`(관리자 화면 전체 조회 가능, 생성·수정·삭제는 서버에서 403) / `ADMIN`(`.env`의 `ADMIN_ACCESS_KEY`로 진입, 전체 CRUD)
+- UI: 커리어 매거진(에디토리얼) 스타일 — 페이퍼 배경 #f6f4ef, 잉크 #141414, 포인트 라임 #d4ff3a, 제목 Noto Serif KR / 본문 IBM Plex Sans KR, 로고·파비콘은 행택(Tag)+체크 모티프(`frontend/public/favicon.svg`)
+- React `useEffect`는 반드시 중괄호 본문으로 작성하고 정리 함수 외 값을 반환하지 말 것 (`window.scrollTo`가 Promise를 반환해 화면이 하얗게 되는 버그 이력)
 
 jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구사항은 `docs/산출물/요구사항_명세서.md`를 기준으로 합니다.
 
@@ -22,10 +24,11 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 ## 보안 규칙 (반드시 지킬 것)
 - `.env`는 커밋하지 않음
 - `USER_JWT_SECRET`과 `ADMIN_JWT_SECRET`은 서로 다른 값 사용
-- `ADMIN_INITIAL_EMAIL`, `ADMIN_INITIAL_PASSWORD`, 정식 관리자 TOTP 시크릿 값은 저장소·`.env.example`·프런트엔드 코드에 절대 넣지 않음 (Render 대시보드 전용)
+- `ADMIN_ACCESS_KEY` 값은 저장소·`.env.example`·프런트엔드 코드에 절대 넣지 않음 (로컬 `.env`·Render 대시보드 전용)
 - `VITE_` 접두사 변수는 브라우저에 노출되므로 비밀값을 넣지 않음
 - 권한 검사는 프런트 라우트 가드와 백엔드 API 양쪽에 적용
-  - `/api/admin/**`: 정식 관리자 토큰(`ADMIN_JWT_SECRET` 서명 + TOTP 통과)만 허용, 그 외 토큰은 403
+  - `/api/admin/**`: `ADMIN` 토큰(`ADMIN_JWT_SECRET` 서명)은 전체 허용, `TEST_ADMIN` 토큰(`USER_JWT_SECRET` 서명)은 GET만 허용·변경 요청 403, `USER` 토큰 403
+  - 관리자 키 로그인 5회 실패 시 15분 잠금(429)
 - 정식 관리자 계정은 서버 초기화 스크립트로만 생성 (회원가입 API로 생성 불가)
 
 ## 배포
@@ -41,6 +44,7 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 - 백엔드: `.venv/Scripts/python -m uvicorn backend.app.main:app --reload` → `GET /api/health`
 - 프런트: `cd frontend && npm ci && npm run build` (개발 서버 `npm run dev`)
 - 워크플로 수정 시 actionlint로 검사
+- 화면 회귀 검사: playwright-core + 설치된 Edge(`channel: 'msedge'`)로 클릭 내비게이션·권한 흐름 E2E 확인
 
 ## 채용 공고 수집원
 - 고용24 채용정보 목록/상세 API는 개인 신청 불가 → 공공데이터포털·서울 열린데이터광장을 주 수집원으로 사용
@@ -52,5 +56,5 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 
 ## 미결 사항
 - Pick Score 가중치(50/30/20)는 2단계에서 샘플 데이터로 검증 후 조정
-- 관리자 로그인(TOTP)은 아직 미구현이라 `/api/admin/login`이 503/501을 반환함 (의도된 동작)
+- 관리자 데이터(공고·회원)는 현재 메모리 저장 — TiDB 연동 시 영속화 필요
 
