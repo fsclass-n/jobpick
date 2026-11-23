@@ -3,7 +3,9 @@
 ## 서비스 콘셉트
 - jobpick = Pick 여정: **Match**(공고 매칭·합격 거리) → **Gap**(갭 로드맵) → **Rewrite**(리라이팅 스튜디오) → **Rehearse**(모의면접), 단계별 결과를 **Pick Score**(적합도 50 + 역량 커버리지 30 + 면접 준비도 20)로 통합
 - 권한 3종: `USER`(체험 모드) / `TEST_ADMIN`(관리자 화면 전체 조회 가능, 생성·수정·삭제는 서버에서 403) / `ADMIN`(`.env`의 `ADMIN_ACCESS_KEY`로 진입, 전체 CRUD)
-- UI: 커리어 매거진(에디토리얼) 스타일 — 페이퍼 배경 #f6f4ef, 잉크 #141414, 포인트 라임 #d4ff3a, 제목 Noto Serif KR / 본문 IBM Plex Sans KR, 로고·파비콘은 행택(Tag)+체크 모티프(`frontend/public/favicon.svg`)
+- UI: "오늘의 공고를 넘기고 고르는" 스와이프 덱 + 벤토 그리드 + 실사 사진. 네이비 #0f1033(양복) · 코랄 #ff5a3c(넥타이) · 민트 #19d3a2(Pick), 본문 Pretendard / 숫자·영문 Space Grotesk, 라운드 28px 타일
+- 로고·파비콘: 양복 칼라 + 넥타이 + 라펠 핀 체크(✓) (`frontend/public/favicon.svg`, `LogoMark`)
+- 사진: Unsplash 무료 라이선스 이미지를 `frontend/public/images/`에 webp로 내려받아 사용(핫링크 금지), 푸터에 작가 크레딧(`src/data/credits.js`). Unsplash+ 유료·AI 생성 이미지는 쓰지 않음
 - React `useEffect`는 반드시 중괄호 본문으로 작성하고 정리 함수 외 값을 반환하지 말 것 (`window.scrollTo`가 Promise를 반환해 화면이 하얗게 되는 버그 이력)
 
 jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구사항은 `docs/산출물/요구사항_명세서.md`를 기준으로 합니다.

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import { IMG } from '../data/credits'
 import { useApp } from '../state'
-import { Btn, Check, Logo } from '../components/ui'
+import { Btn, Chip, Icon, Logo, LogoMark } from '../components/ui'
 
 const RULES = [
   ['8자 이상', (p) => p.length >= 8],
@@ -11,7 +12,8 @@ const RULES = [
   ['숫자', (p) => /\d/.test(p)],
   ['특수문자', (p) => /[^A-Za-z0-9]/.test(p)],
 ]
-const SOCIAL = [['Google', 'border border-ink bg-white'], ['Naver', 'bg-[#03c75a] text-white'], ['Kakao', 'bg-[#fee500]']]
+const SOCIAL = [['Google', 'bg-white ring-1 ring-line'], ['Naver', 'bg-[#03c75a] text-white'], ['Kakao', 'bg-[#fee500]']]
+const field = 'mt-1.5 h-12 w-full rounded-2xl bg-bg px-4 text-sm outline-none ring-1 ring-line transition focus:bg-white focus:ring-2 focus:ring-navy'
 
 export function Login() {
   const { login, role, isAdmin } = useApp()
@@ -19,7 +21,7 @@ export function Login() {
   const from = useLocation().state?.from || '/journey'
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
-  const [busy, setBusy] = useState('')
+  const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const ok = RULES.every(([, f]) => f(pw))
   if (role === 'USER') return <Navigate to={from} replace />
@@ -27,49 +29,60 @@ export function Login() {
 
   const enterUser = () => { login('USER'); nav(from, { replace: true }) }
   const enterTestAdmin = async () => {
-    setBusy('test'); setErr('')
+    setBusy(true); setErr('')
     try {
       const r = await api('/api/auth/test-admin', { method: 'POST' })
       login('TEST_ADMIN', r.access_token)
       nav('/admin', { replace: true })
-    } catch (e) { setErr(e.message) } finally { setBusy('') }
+    } catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
 
   return (
-    <div className="mx-auto grid min-h-[78vh] max-w-[1280px] border-x border-ink lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-ink p-12 text-paper lg:flex">
-        <Logo light />
-        <div>
-          <div className="eyebrow text-paper/60">Career editorial</div>
-          <h2 className="display mt-4 text-6xl">공고와 나를<br />맞대어,<br /><span className="text-pick">Pick.</span></h2>
+    <div className="wrap py-8">
+      <div className="grid overflow-hidden rounded-[36px] bg-white shadow-xl shadow-navy/5 ring-1 ring-line lg:grid-cols-2">
+        <div className="relative hidden min-h-[640px] lg:block">
+          <img src={IMG.hero} alt="사무실에서 미소 짓는 직장인" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/30 to-transparent" />
+          <div className="float absolute right-8 top-8 rounded-3xl bg-white p-4 shadow-xl">
+            <div className="text-[11px] font-semibold text-sub">Pick Score</div>
+            <div className="num text-3xl font-bold">81 <span className="text-sm text-[#0b8a68]">+43</span></div>
+          </div>
+          <div className="absolute bottom-10 left-10 right-10 text-white">
+            <LogoMark className="h-12 w-12" />
+            <h2 className="mt-5 text-4xl font-extrabold leading-tight">넥타이를 매기 전,<br />거리부터 줄이세요.</h2>
+            <p className="mt-3 text-white/70">공고 매칭 · 갭 로드맵 · 리라이팅 · 모의면접</p>
+          </div>
         </div>
-        <ul className="space-y-2 text-sm text-paper/80">
-          {['01 공고 매칭 · 합격 거리', '02 갭 로드맵', '03 리라이팅 스튜디오', '04 모의면접'].map((t) => <li key={t} className="flex items-center gap-2"><Check className="h-4 w-4 text-pick" />{t}</li>)}
-        </ul>
-      </div>
-      <div className="flex flex-col justify-center bg-paper p-8 sm:p-14">
-        <div className="eyebrow text-mute">Sign in</div>
-        <h1 className="display mt-2 text-4xl">로그인</h1>
+        <div className="flex flex-col justify-center p-8 sm:p-14">
+          <h1 className="text-3xl font-extrabold tracking-tight">로그인</h1>
+          <p className="mt-2 text-sm text-sub">가입 없이 체험하거나, 이메일·소셜 계정으로 로그인하세요.</p>
 
-        <div className="mt-8 grid gap-2 sm:grid-cols-2">
-          <Btn variant="pick" onClick={enterUser} className="border border-ink">일반 사용자 체험하기</Btn>
-          <Btn variant="line" onClick={enterTestAdmin} disabled={busy === 'test'}>{busy === 'test' ? '서버 연결 중…' : '테스트 관리자 (읽기 전용)'}</Btn>
-        </div>
-        {err && <p className="mt-2 text-xs text-alert">{err}</p>}
+          <button onClick={enterUser} className="mt-8 flex items-center justify-between rounded-3xl bg-navy p-5 text-left text-white transition hover:bg-suit">
+            <span><span className="block text-base font-bold">샘플 데이터로 바로 체험</span><span className="text-xs text-white/60">일반 사용자 · 가입 불필요</span></span>
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-mint text-navy">{Icon.arrow('h-5 w-5')}</span>
+          </button>
 
-        <div className="my-6 flex items-center gap-3 text-[11px] text-mute"><span className="h-px flex-1 bg-line" />또는 이메일<span className="h-px flex-1 bg-line" /></div>
-        <label className="eyebrow text-[10px]" htmlFor="email">Email</label>
-        <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="mb-4 mt-1 border-b border-ink bg-transparent py-2 outline-none focus:border-b-2" />
-        <label className="eyebrow text-[10px]" htmlFor="pw">Password</label>
-        <input id="pw" value={pw} onChange={(e) => setPw(e.target.value)} type="password" className="mt-1 border-b border-ink bg-transparent py-2 outline-none focus:border-b-2" />
-        <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
-          {RULES.map(([l, f]) => <li key={l} className={f(pw) ? 'font-semibold text-ink' : 'text-mute'}>{f(pw) ? '●' : '○'} {l}</li>)}
-        </ul>
-        <Btn disabled={!ok || !email} onClick={enterUser} className="mt-6 w-full">로그인</Btn>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {SOCIAL.map(([n, c]) => <button key={n} onClick={enterUser} className={`py-3 text-xs font-bold ${c}`}>{n}</button>)}
+          <div className="my-7 flex items-center gap-3 text-xs text-sub"><span className="h-px flex-1 bg-line" />또는 이메일<span className="h-px flex-1 bg-line" /></div>
+          <label className="text-xs font-semibold" htmlFor="email">이메일</label>
+          <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@example.com" className={field} />
+          <label className="mt-4 text-xs font-semibold" htmlFor="pw">비밀번호</label>
+          <input id="pw" value={pw} onChange={(e) => setPw(e.target.value)} type="password" className={field} />
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {RULES.map(([l, f]) => <li key={l}><Chip tone={f(pw) ? 'mint' : 'line'}>{f(pw) ? '✓' : '·'} {l}</Chip></li>)}
+          </ul>
+          <Btn disabled={!ok || !email} onClick={enterUser} size="lg" className="mt-6 w-full">이메일로 로그인</Btn>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {SOCIAL.map(([n, c]) => <button key={n} onClick={enterUser} className={`h-12 rounded-2xl text-sm font-bold ${c}`}>{n}</button>)}
+          </div>
+
+          <div className="mt-8 rounded-3xl bg-bg p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs"><b className="text-sm">QA · 시연용 테스트 관리자</b><br /><span className="text-sub">관리자 화면 전체를 읽기 전용으로 둘러봅니다</span></div>
+              <Btn variant="soft" size="sm" onClick={enterTestAdmin} disabled={busy}>{busy ? '서버 연결 중…' : '테스트 관리자 로그인'}</Btn>
+            </div>
+            {err && <p className="mt-2 text-xs text-tie">{err}</p>}
+          </div>
         </div>
-        <p className="mt-6 text-[11px] text-mute">데모 환경에서 일반 사용자는 Mock 인증, 테스트 관리자는 서버에서 읽기 전용 토큰을 발급받습니다.</p>
       </div>
     </div>
   )
@@ -91,18 +104,22 @@ export function AdminLogin() {
     } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
   }
   return (
-    <div className="grid min-h-[78vh] place-items-center bg-ink px-4 py-16">
-      <form onSubmit={submit} className="w-full max-w-md border border-paper/20 p-10 text-paper">
-        <Logo light small />
-        <div className="eyebrow mt-10 text-pick">Restricted · Admin only</div>
-        <h1 className="display mt-2 text-4xl">관리자 로그인</h1>
-        <p className="mt-3 text-sm text-paper/60">서버 환경 변수 <code className="text-pick">ADMIN_ACCESS_KEY</code>와 일치하는 관리자 키로만 진입합니다. 모든 데이터의 생성·수정·삭제 권한이 부여됩니다.</p>
-        <label className="eyebrow mt-8 block text-[10px] text-paper/60" htmlFor="key">Admin access key</label>
-        <input id="key" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} required className="mt-1 w-full border-b border-paper/40 bg-transparent py-3 font-mono outline-none focus:border-pick" />
-        {err && <p className="mt-3 text-xs text-alert">{err}</p>}
-        <Btn variant="pick" disabled={busy || !key} className="mt-8 w-full">{busy ? '확인 중… (서버가 깨어나는 데 최대 1분)' : '관리자 진입'}</Btn>
-        <p className="mt-6 text-[11px] text-paper/40">{5}회 실패 시 일정 시간 잠깁니다. 테스트 관리자는 <Link to="/login" className="underline">일반 로그인</Link>에서 진입하세요.</p>
-      </form>
+    <div className="wrap py-8">
+      <div className="relative grid min-h-[600px] place-items-center overflow-hidden rounded-[36px] bg-navy px-4 py-16">
+        <div className="blob -left-20 -top-20 h-80 w-80 bg-suit" />
+        <div className="blob -bottom-20 -right-10 h-80 w-80 bg-tie/40" />
+        <form onSubmit={submit} className="relative w-full max-w-md rounded-[32px] bg-white/5 p-10 text-white ring-1 ring-white/10 backdrop-blur">
+          <Logo light />
+          <Chip tone="tie" className="mt-8">관리자 전용</Chip>
+          <h1 className="mt-3 text-3xl font-extrabold">관리자 로그인</h1>
+          <p className="mt-2 text-sm text-white/60">서버 환경 변수 <code className="text-mint">ADMIN_ACCESS_KEY</code>와 일치하는 키로만 진입합니다. 모든 데이터의 생성·수정·삭제 권한이 부여됩니다.</p>
+          <label className="mt-8 block text-xs font-semibold text-white/70" htmlFor="key">관리자 키</label>
+          <input id="key" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} required className="mt-1.5 h-12 w-full rounded-2xl bg-white/10 px-4 font-mono text-sm outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-mint" />
+          {err && <p className="mt-3 text-xs text-tie">{err}</p>}
+          <Btn variant="mint" size="lg" disabled={busy || !key} className="mt-6 w-full">{busy ? '확인 중… (서버 기동 최대 1분)' : '관리자 진입'}</Btn>
+          <p className="mt-6 text-[11px] text-white/40">5회 실패 시 15분간 잠깁니다. 테스트 관리자는 <Link to="/login" className="underline">로그인 화면</Link>에서 진입하세요.</p>
+        </form>
+      </div>
     </div>
   )
 }

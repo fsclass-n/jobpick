@@ -25,10 +25,10 @@ function AdminOnly({ children }) {
 
 function Info({ title, body }) {
   return (
-    <div className="wrap py-28 text-center">
-      <div className="display text-7xl">{title}</div>
-      <p className="mt-4 text-mute">{body}</p>
-      <Link to="/" className="mt-8 inline-block bg-ink px-6 py-3 text-sm font-semibold text-paper">메인으로</Link>
+    <div className="wrap py-24 text-center">
+      <div className="num text-7xl font-bold">{title}</div>
+      <p className="mt-4 text-sub">{body}</p>
+      <Link to="/" className="mt-8 inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-semibold text-white">메인으로</Link>
     </div>
   )
 }

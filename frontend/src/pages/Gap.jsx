@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { JourneyBar } from '../components/Layout'
-import { Btn, PageHead, Panel, Tag } from '../components/ui'
+import JourneyBar from '../components/JourneyBar'
+import { Btn, Chip, Monogram, PageHead, Ring, Tile } from '../components/ui'
 import { JOBS, SKILL_PLAN } from '../data/mock'
 import { useApp } from '../state'
 
@@ -16,51 +16,50 @@ export default function Gap() {
   })
   const max = Math.max(1, ...Object.values(freq))
   const all = Object.entries(freq).sort((a, b) => b[1] - a[1])
-  const names = JOBS.filter((j) => scraps.includes(j.id)).map((j) => j.company)
+  const picked = JOBS.filter((j) => scraps.includes(j.id))
 
   return (
     <div className="wrap pb-10">
       <JourneyBar />
-      <PageHead no="02" en="Gap" ko="갭 로드맵" desc={`스크랩한 공고 ${n}개(${names.join(', ') || '없음'})가 요구하는 역량을 집계했습니다.`}>
-        <div className="text-right"><div className="eyebrow text-mute">Coverage</div><div className="font-serif text-5xl font-black">{coverage}%</div></div>
-      </PageHead>
+      <PageHead step="Step 02 · Gap" title="갭 로드맵" desc="Pick한 공고들이 공통으로 요구하는 역량을 모아, 부족한 것부터 주차별 계획으로 바꿨어요."
+        aside={<div className="flex -space-x-2">{picked.map((j) => <Monogram key={j.id} name={j.company} seed={j.id} className="h-11 w-11 text-base ring-4 ring-bg" />)}</div>} />
       {n === 0 ? (
-        <Panel className="mt-8 p-10 text-center">공고를 스크랩하면 갭을 분석합니다. <Link to="/match" className="font-semibold underline">공고 매칭으로 →</Link></Panel>
+        <Tile className="p-12 text-center">아직 Pick한 공고가 없어요. <Link to="/" className="font-semibold text-tie underline">메인에서 공고를 넘겨 보세요</Link></Tile>
       ) : (
-        <div className="grid gap-8 pt-8 lg:grid-cols-2">
-          <section>
-            <h2 className="eyebrow mb-4 border-b border-ink pb-2">Market demand · 공고 노출 빈도</h2>
-            <ul>
+        <div className="grid gap-4 lg:grid-cols-[320px_1fr_1fr]">
+          <Tile className="flex flex-col items-center justify-center p-8 text-center">
+            <Ring value={coverage} size={160} stroke={10} label="역량 커버리지" />
+            <p className="mt-4 text-sm text-sub">공고 {n}개 · 요구역량 {all.length}종 중<br /><b className="text-navy">{all.filter(([s]) => owned.includes(s)).length}종</b> 보유</p>
+          </Tile>
+          <Tile className="p-6">
+            <h2 className="font-extrabold">시장이 원하는 역량</h2>
+            <ul className="mt-4 space-y-3">
               {all.map(([s, c]) => {
                 const have = owned.includes(s)
                 return (
-                  <li key={s} className="grid grid-cols-[110px_1fr_48px_56px] items-center gap-3 border-b border-line py-3 text-sm">
-                    <span className="font-medium">{s}</span>
-                    <div className="h-2 bg-line"><div className={`h-2 ${have ? 'bg-ink' : 'bg-alert'}`} style={{ width: `${(c / max) * 100}%`, transition: 'width .6s' }} /></div>
-                    <span className="text-right text-xs text-mute">{c}/{n}</span>
-                    <Tag tone={have ? 'pick' : 'alert'}>{have ? '보유' : '부족'}</Tag>
+                  <li key={s} className="text-sm">
+                    <div className="mb-1 flex justify-between"><span className="font-semibold">{s}</span><span className="text-xs text-sub">{c}/{n}개 공고 · {have ? <b className="text-[#0b8a68]">보유</b> : <b className="text-tie">부족</b>}</span></div>
+                    <div className="h-2.5 rounded-full bg-bg"><div className={`h-2.5 rounded-full ${have ? 'bg-mint' : 'bg-tie'}`} style={{ width: `${(c / max) * 100}%`, transition: 'width .6s' }} /></div>
                   </li>
                 )
               })}
             </ul>
-          </section>
-          <section>
-            <h2 className="eyebrow mb-4 border-b border-ink pb-2">Roadmap · 총 {week - 1}주</h2>
-            {plan.length === 0 ? <Panel className="p-6 text-sm">모든 요구역량을 보유했습니다.</Panel> : (
-              <ol>
+          </Tile>
+          <Tile className="p-6">
+            <div className="flex items-center justify-between"><h2 className="font-extrabold">보완 로드맵</h2><Chip tone="navy">총 {week - 1}주</Chip></div>
+            {plan.length === 0 ? <p className="mt-6 text-sm text-[#0b8a68]">모든 요구역량을 갖췄어요!</p> : (
+              <ol className="mt-4 space-y-3">
                 {plan.map((p) => (
-                  <li key={p.s} className="grid grid-cols-[84px_1fr] gap-4 border-b border-line py-4">
-                    <div className="font-serif text-lg font-black">{p.from === p.to ? `W${p.from}` : `W${p.from}–${p.to}`}</div>
-                    <div>
-                      <div className="flex items-center gap-2"><span className="font-bold">{p.s}</span><span className="text-xs text-mute">공고 {p.c}/{n}</span></div>
-                      <p className="mt-1 text-sm text-mute">{p.task}</p>
-                      <Btn variant="line" onClick={() => setOwned([...owned, p.s])} className="mt-3 px-3 py-1.5 text-xs">완료 처리 → 점수 반영</Btn>
-                    </div>
+                  <li key={p.s} className="rounded-3xl bg-bg p-4">
+                    <div className="flex items-center justify-between"><span className="num text-xs font-bold text-tie">{p.from === p.to ? `W${p.from}` : `W${p.from}–W${p.to}`}</span><span className="text-[11px] text-sub">공고 {p.c}/{n}</span></div>
+                    <div className="mt-1 font-bold">{p.s}</div>
+                    <p className="mt-0.5 text-xs text-sub">{p.task}</p>
+                    <Btn size="sm" variant="soft" onClick={() => setOwned([...owned, p.s])} className="mt-3">완료 → 점수 반영</Btn>
                   </li>
                 ))}
               </ol>
             )}
-          </section>
+          </Tile>
         </div>
       )}
     </div>
