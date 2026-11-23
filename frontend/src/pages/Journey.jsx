@@ -6,7 +6,7 @@ import { MY_TREND, PROFILE } from '../data/mock'
 import { useApp } from '../state'
 
 export default function Journey() {
-  const { pick, match, coverage, rehearse, target, gaps, scraps } = useApp()
+  const { pick, match, coverage, rehearse, target, gaps, scraps, user } = useApp()
   const trend = [...MY_TREND, pick]
   const parts = [['서류 적합도', 50, match, '/match', '#26286a'], ['역량 커버리지', 30, coverage, '/gap', '#19d3a2'], ['면접 준비도', 20, rehearse, '/rehearse', '#ff5a3c']]
   const actions = [
@@ -17,7 +17,7 @@ export default function Journey() {
   return (
     <div className="wrap pb-10">
       <JourneyBar />
-      <PageHead step="My Journey" title={`${PROFILE.name}님의 Pick 여정`} desc={`목표 공고 ${target.company} · ${target.title} · Pick ${scraps.length}건`} />
+      <PageHead step="My Journey" title={`${user?.name || PROFILE.name}님의 Pick 여정`} desc={`목표 공고 ${target.company} · ${target.title} · Pick ${scraps.length}건`} />
       <div className="grid gap-4 lg:grid-cols-12">
         <Tile className="flex flex-col items-center p-8 lg:col-span-4">
           <Ring value={pick} size={180} stroke={8} label="Pick Score" color="#ff5a3c" />
