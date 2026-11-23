@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { IMG } from '../data/credits'
@@ -12,7 +12,12 @@ const RULES = [
   ['숫자', (p) => /\d/.test(p)],
   ['특수문자', (p) => /[^A-Za-z0-9]/.test(p)],
 ]
-const SOCIAL = [['Google', 'bg-white ring-1 ring-line'], ['Naver', 'bg-[#03c75a] text-white'], ['Kakao', 'bg-[#fee500]']]
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+const SOCIAL = [
+  { id: 'google', label: 'Google', icon: <span className="text-[15px] font-black leading-none text-[#4285F4]">G</span> },
+  { id: 'naver', label: 'Naver', icon: <span className="grid h-4 w-4 place-items-center rounded-[4px] bg-[#03c75a] text-[10px] font-black leading-none text-white">N</span> },
+  { id: 'kakao', label: 'Kakao', icon: <span className="grid h-4 w-4 place-items-center rounded-[4px] bg-[#fee500] text-[#3c1e1e]"><svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor" aria-hidden><path d="M12 4C6.9 4 3 6.9 3 10.5c0 2.3 1.5 4.3 3.8 5.5l-1 3.4c-.1.3.3.6.5.4l4-2.6c.6.1 1.1.1 1.7.1 5.1 0 9-2.9 9-6.4S17.1 4 12 4Z" /></svg></span> },
+]
 const field = 'mt-1.5 h-12 w-full rounded-2xl bg-bg px-4 text-sm outline-none ring-1 ring-line transition focus:bg-white focus:ring-2 focus:ring-navy'
 
 export function Login() {
@@ -23,11 +28,33 @@ export function Login() {
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [oauthErr, setOauthErr] = useState('')
   const ok = RULES.every(([, f]) => f(pw))
+
+  // 소셜 로그인 완료 후 /login#token=... 형태로 돌아오는 콜백 처리
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1))
+    const token = hash.get('token')
+    const error = hash.get('error')
+    if (!token && !error) return
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    if (token) {
+      login('USER', token)
+      nav(from, { replace: true })
+    } else {
+      setOauthErr(error)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (role === 'USER') return <Navigate to={from} replace />
   if (isAdmin) return <Navigate to="/admin" replace />
 
   const enterUser = () => { login('USER'); nav(from, { replace: true }) }
+  const social = (id) => {
+    if (!API_BASE) { enterUser(); return }
+    window.location.href = `${API_BASE}/api/auth/oauth/${id}/login`
+  }
   const enterTestAdmin = async () => {
     setBusy(true); setErr('')
     try {
@@ -72,8 +99,18 @@ export function Login() {
           </ul>
           <Btn disabled={!ok || !email} onClick={enterUser} size="lg" className="mt-6 w-full">이메일로 로그인</Btn>
           <div className="mt-3 grid grid-cols-3 gap-2">
-            {SOCIAL.map(([n, c]) => <button key={n} onClick={enterUser} className={`h-12 rounded-2xl text-sm font-bold ${c}`}>{n}</button>)}
+            {SOCIAL.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => social(s.id)}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-white text-sm font-bold text-navy ring-1 ring-line transition hover:bg-navy hover:text-white hover:ring-navy"
+              >
+                {s.icon}
+                {s.label}
+              </button>
+            ))}
           </div>
+          {oauthErr && <p className="mt-2 text-xs text-tie">{oauthErr}</p>}
 
           <div className="mt-8 rounded-3xl bg-bg p-4">
             <div className="flex items-center justify-between gap-3">
