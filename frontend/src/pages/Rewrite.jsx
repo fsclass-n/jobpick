@@ -46,7 +46,7 @@ export default function Rewrite() {
             <div className="flex items-start justify-between gap-3"><Chip tone="mint">AI 제안</Chip><span className="text-right text-[11px] text-sub">{e.reason}</span></div>
             <p className="mt-4 leading-relaxed"><Highlight text={e.suggestion} words={words} /></p>
             <div className="mt-6 flex gap-2">
-              <Btn onClick={() => apply(true)} disabled={isOn}>수락하고 +3점</Btn>
+              <Btn onClick={() => apply(true)} disabled={isOn}>수락 → 적합도 반영</Btn>
               <Btn variant="soft" onClick={() => apply(false)} disabled={!isOn}>되돌리기</Btn>
             </div>
           </div>

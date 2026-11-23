@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react'
-import { CUTOFF, ESSAYS, JOBS, PROFILE } from './data/mock'
+import { CUTOFF, ESSAYS, JOBS } from './data/mock'
 
 const KEY = { USER: 'jobpick.user.token', TEST_ADMIN: 'jobpick.testadmin.token', ADMIN: 'jobpick.admin.token' }
 const ROLE_KEY = 'jobpick.role'
@@ -13,8 +13,8 @@ const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)))
 export function AppProvider({ children }) {
   const [role, setRole] = useState(() => sessionStorage.getItem(ROLE_KEY))
   const [targetId, setTargetId] = useState(1)
-  const [scraps, setScraps] = useState([1, 2, 3, 4])
-  const [owned, setOwned] = useState(PROFILE.skills)
+  const [scraps, setScraps] = useState([])
+  const [owned, setOwned] = useState([])
   const [accepted, setAccepted] = useState({})
   const [interview, setInterview] = useState([])
 
@@ -36,9 +36,10 @@ export function AppProvider({ children }) {
   const value = useMemo(() => {
     const target = JOBS.find((j) => j.id === targetId)
     const baseFit = (j) => Object.values(j.radar).reduce((a, b) => a + b, 0) / 5
-    const acceptedCount = Object.values(accepted).filter(Boolean).length
-    const fitOf = (j) => clamp(baseFit(j) + (j.id === targetId ? acceptedCount * 3 : 0))
-    const match = fitOf(target)
+    const fitOf = (j) => clamp(baseFit(j))
+    // 서류 적합도: 수락한 문항 비율만큼 목표 공고와의 적합도가 채워진다 (미작성 시 0)
+    const essayDone = Object.values(accepted).filter(Boolean).length
+    const match = essayDone === 0 ? 0 : clamp((baseFit(target) * essayDone) / ESSAYS.length)
 
     const scrapped = JOBS.filter((j) => scraps.includes(j.id))
     const freq = {}

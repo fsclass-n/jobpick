@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom'
 import JourneyBar from '../components/JourneyBar'
 import { Icon, PageHead, Ring, Spark, Tile } from '../components/ui'
 import { IMG } from '../data/credits'
-import { MY_TREND, PROFILE } from '../data/mock'
+import { PROFILE } from '../data/mock'
 import { useApp } from '../state'
 
 export default function Journey() {
   const { pick, match, coverage, rehearse, target, gaps, scraps, user } = useApp()
-  const trend = [...MY_TREND, pick]
+  const trend = [0, pick]
   const parts = [['서류 적합도', 50, match, '/match', '#26286a'], ['역량 커버리지', 30, coverage, '/gap', '#19d3a2'], ['면접 준비도', 20, rehearse, '/rehearse', '#ff5a3c']]
   const actions = [
     gaps[0] && ['가장 큰 갭 보완', `${gaps[0][0]} 역량을 채우세요`, '/gap'],
-    ['자소서 제안 수락', '문항별 AI 제안으로 적합도 +3점', '/rewrite'],
+    ['자소서 제안 수락', '문항별 AI 제안을 수락하면 서류 적합도가 올라가요', '/rewrite'],
     rehearse === 0 && ['모의면접 시작', '아직 면접 준비도가 0점이에요', '/rehearse'],
   ].filter(Boolean)
   return (
@@ -31,7 +31,7 @@ export default function Journey() {
           </ul>
         </Tile>
         <Tile className="p-6 lg:col-span-8">
-          <div className="flex items-center justify-between"><b>점수 변화</b><span className="text-xs text-sub">샘플 기록 + 현재 세션</span></div>
+          <div className="flex items-center justify-between"><b>점수 변화</b><span className="text-xs text-sub">현재 세션</span></div>
           <Spark data={trend} height={200} />
         </Tile>
         {actions.map(([t, d, to], k) => (
