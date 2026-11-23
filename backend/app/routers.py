@@ -231,6 +231,28 @@ def admin_users(db: Session = Depends(get_db)):
     return [user_out(u) for u in db.scalars(select(User).order_by(User.id))]
 
 
+@admin.post("/collect")
+def admin_collect(db: Session = Depends(get_db)):
+    """공식 오픈 API(사람인/워크넷/HRD-Net)에서 실제 공고·훈련과정을 수집해 반영한다."""
+    from .collectors import collect_all
+
+    result = collect_all()
+    added = updated = 0
+    for it in result["items"]:
+        row = db.scalar(select(Job).where(Job.external_id == it["external_id"]))
+        if row is None:
+            db.add(Job(**it))
+            added += 1
+        else:
+            for key, value in it.items():
+                if key != "external_id":
+                    setattr(row, key, value)
+            updated += 1
+    db.commit()
+    total = db.scalar(select(func.count()).select_from(Job))
+    return {"added": added, "updated": updated, "total": total, "sources": result["stats"]}
+
+
 class RoleIn(BaseModel):
     role: str = Field(pattern="^(USER|TEST_ADMIN)$")
 

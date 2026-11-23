@@ -43,6 +43,8 @@ class Job(Base):
     skills: Mapped[list] = mapped_column(JSON, default=list)
     values: Mapped[list] = mapped_column(JSON, default=list)
     radar: Mapped[dict] = mapped_column(JSON, default=dict)
+    external_id: Mapped[str | None] = mapped_column(String(150), unique=True, nullable=True, index=True)
+    url: Mapped[str] = mapped_column(String(500), default="")
 
 
 def get_db():
@@ -56,7 +58,8 @@ def get_db():
 def job_out(j: Job) -> dict:
     return {"id": j.id, "company": j.company, "title": j.title, "region": j.region,
             "career": j.career, "size": j.size, "source": j.source, "deadline": j.deadline,
-            "skills": list(j.skills or []), "values": list(j.values or []), "radar": dict(j.radar or {})}
+            "skills": list(j.skills or []), "values": list(j.values or []), "radar": dict(j.radar or {}),
+            "url": j.url or ""}
 
 
 def user_out(u: User) -> dict:
@@ -76,6 +79,10 @@ def init_db(seed_jobs: list[dict], seed_users: list[dict]) -> None:
             conn.execute(text("ALTER TABLE jobs ADD COLUMN deadline VARCHAR(10) DEFAULT ''"))
         if "radar" not in cols:
             conn.execute(text("ALTER TABLE jobs ADD COLUMN radar JSON"))
+        if "external_id" not in cols:
+            conn.execute(text("ALTER TABLE jobs ADD COLUMN external_id VARCHAR(150)"))
+        if "url" not in cols:
+            conn.execute(text("ALTER TABLE jobs ADD COLUMN url VARCHAR(500) DEFAULT ''"))
     with SessionLocal() as db:
         for j in seed_jobs:
             row = db.get(Job, j["id"])

@@ -16,6 +16,7 @@ export default function Admin() {
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [msg, setMsg] = useState(null)
+  const [collect, setCollect] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const call = useCallback((path, opt = {}) => api(path, { ...opt, token }), [token])
@@ -126,7 +127,7 @@ export default function Admin() {
                   ))}
                 </tbody>
               </table>
-              <p className="border-t border-line px-4 py-3 text-[11px] text-sub">실제 관리자 권한은 화면에서 부여할 수 없으며, 서버 환경 변수 ADMIN_ACCESS_KEY로만 진입합니다.</p>
+              <p className="border-t border-line px-4 py-3 text-[11px] text-sub">실제 관리자 권한은 화면에서 부여할 수 없으며, 서버 환경 변수 ADMIN_EMAIL/ADMIN_PASSWORD 계정으로만 진입합니다.</p>
             </Tile>
           )}
 
@@ -134,9 +135,24 @@ export default function Admin() {
             <Tile className="p-6">
               <b>수집 관리</b>
               <ul className="mt-3 text-sm">
-                {[['대상', '공공데이터포털 · 서울 열린데이터 · 나라일터'], ['키워드', '데이터 분석 · BI · 마케팅 분석'], ['스케줄', '매일 06:00']].map(([k, v]) => <li key={k} className="flex justify-between border-b border-line py-3 last:border-0"><span className="text-sub">{k}</span><b>{v}</b></li>)}
+                {[['대상', '사람인 오픈 API · 워크넷 오픈 API · HRD-Net 훈련과정'], ['지역', '서울 · 경기 · 인천'], ['직군', '웹·IT 개발 전체 (훈련과정 포함)'], ['방식', '공식 오픈 API (수동 실행)']].map(([k, v]) => <li key={k} className="flex justify-between border-b border-line py-3 last:border-0"><span className="text-sub">{k}</span><b>{v}</b></li>)}
               </ul>
-              <Btn variant="tie" className="mt-4" {...lock} onClick={() => write(async () => {}, '수집 작업을 요청했습니다. (RPA 연동 예정)')}>수동 실행</Btn>
+              <Btn variant="tie" className="mt-4" {...lock} onClick={() => write(async () => {
+                const res = await call('/api/admin/collect', { method: 'POST' })
+                setCollect(res)
+                return res
+              }, '수집을 완료했습니다.')}>수집 실행</Btn>
+              {collect && (
+                <div className="mt-4 rounded-2xl bg-bg p-4 text-sm">
+                  <b>신규 {collect.added}건 · 갱신 {collect.updated}건 · 전체 {collect.total}건</b>
+                  <ul className="mt-2 space-y-1 text-xs text-sub">
+                    {Object.entries(collect.sources).map(([k, v]) => <li key={k}>{k}: {v}</li>)}
+                  </ul>
+                  {Object.values(collect.sources).some((v) => v.includes('미설정')) && (
+                    <p className="mt-2 text-xs text-tie">API 키가 없는 소스는 건너뜁니다. Render 환경 변수에 WORK24_API_KEY, SARAMIN_ACCESS_KEY를 등록하세요.</p>
+                  )}
+                </div>
+              )}
             </Tile>
           )}
         </section>
