@@ -3,6 +3,7 @@ import { CUTOFF, ESSAYS, JOBS, PROFILE } from './data/mock'
 
 const KEY = { USER: 'jobpick.user.token', TEST_ADMIN: 'jobpick.testadmin.token', ADMIN: 'jobpick.admin.token' }
 const ROLE_KEY = 'jobpick.role'
+const INFO_KEY = 'jobpick.user.info'
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -17,15 +18,18 @@ export function AppProvider({ children }) {
   const [accepted, setAccepted] = useState({})
   const [interview, setInterview] = useState([])
 
-  const login = (r, token = `mock-${r.toLowerCase()}`) => {
+  const login = (r, token = `mock-${r.toLowerCase()}`, info = null) => {
     Object.values(KEY).forEach((k) => sessionStorage.removeItem(k))
     sessionStorage.setItem(KEY[r], token)
     sessionStorage.setItem(ROLE_KEY, r)
+    if (info) sessionStorage.setItem(INFO_KEY, JSON.stringify(info))
+    else sessionStorage.removeItem(INFO_KEY)
     setRole(r)
   }
   const logout = () => {
     Object.values(KEY).forEach((k) => sessionStorage.removeItem(k))
     sessionStorage.removeItem(ROLE_KEY)
+    sessionStorage.removeItem(INFO_KEY)
     setRole(null)
   }
 
@@ -51,6 +55,7 @@ export function AppProvider({ children }) {
     return {
       role, isAdmin: role === 'ADMIN' || role === 'TEST_ADMIN', readOnly: role === 'TEST_ADMIN',
       token: role ? sessionStorage.getItem(KEY[role]) : null, login, logout,
+      user: role === 'USER' ? JSON.parse(sessionStorage.getItem(INFO_KEY) || 'null') : null,
       target, setTargetId, scraps, toggleScrap, owned, setOwned, accepted, setAccepted,
       interview, setInterview, fitOf, match, coverage, gaps, freq, rehearse, pick, distance: CUTOFF - pick, cutoff: CUTOFF,
       essays: ESSAYS,

@@ -11,6 +11,8 @@ export const NAV = [
   ['/rehearse', 'Rehearse', '모의면접'],
 ]
 const ROLE = { USER: ['구직자', 'bg-mint/15 text-[#0b8a68]'], TEST_ADMIN: ['테스트 관리자 · 읽기 전용', 'bg-tie/12 text-tie'], ADMIN: ['관리자', 'bg-navy text-white'] }
+const PROVIDER = { google: 'Google', naver: '네이버', kakao: '카카오' }
+const userLabel = (user) => (user?.name ? `${user.name} 님${user.provider ? ` · ${PROVIDER[user.provider] || user.provider}` : ''}` : '체험 사용자')
 
 export function RoleBadge({ role }) {
   if (!role) return null
@@ -19,7 +21,7 @@ export function RoleBadge({ role }) {
 }
 
 function AccountMenu() {
-  const { role, isAdmin, logout, pick } = useApp()
+  const { role, isAdmin, logout, pick, user } = useApp()
   const nav = useNavigate()
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
@@ -46,7 +48,7 @@ function AccountMenu() {
       </button>
       {open && (
         <div role="menu" className="pop absolute right-0 top-12 w-60 rounded-3xl bg-white p-2 shadow-2xl ring-1 ring-line">
-          <div className="flex items-center justify-between px-3 py-2"><span className="text-sm font-bold">{isAdmin ? '관리자 세션' : '김픽 님'}</span><RoleBadge role={role} /></div>
+          <div className="flex items-center justify-between px-3 py-2"><span className="text-sm font-bold">{isAdmin ? '관리자 세션' : userLabel(user)}</span><RoleBadge role={role} /></div>
           {(isAdmin ? [['/admin', '관리자 콘솔']] : [['/journey', '내 여정 · Pick Score'], ['/match', '스크랩한 공고']]).map(([to, l]) => (
             <button key={to} role="menuitem" onClick={() => { setOpen(false); nav(to) }} className="block w-full rounded-2xl px-3 py-2.5 text-left text-sm hover:bg-bg">{l}</button>
           ))}
@@ -58,7 +60,7 @@ function AccountMenu() {
 }
 
 function Header() {
-  const { role, isAdmin, logout } = useApp()
+  const { role, isAdmin, logout, user } = useApp()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
@@ -107,7 +109,7 @@ function Header() {
             <button onClick={() => setOpen(false)} aria-label="닫기" className="grid h-10 w-10 place-items-center rounded-full bg-bg">{Icon.x()}</button>
           </div>
           <div className="mt-5 flex items-center justify-between rounded-3xl bg-bg p-4 text-sm">
-            {role ? <><span className="font-semibold">{isAdmin ? '관리자 세션' : '김픽 님'}</span><RoleBadge role={role} /></> : <span className="text-sub">로그인하고 오늘의 Pick을 시작하세요</span>}
+            {role ? <><span className="font-semibold">{isAdmin ? '관리자 세션' : userLabel(user)}</span><RoleBadge role={role} /></> : <span className="text-sub">로그인하고 오늘의 Pick을 시작하세요</span>}
           </div>
           <nav className="mt-4 flex-1 space-y-1 overflow-y-auto">
             {[...items, ...(isAdmin ? [] : [['/journey', 'Journey', '내 여정']])].map(([to, en, ko]) => (

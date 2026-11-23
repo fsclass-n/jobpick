@@ -39,7 +39,7 @@ export function Login() {
     if (!token && !error) return
     window.history.replaceState(null, '', window.location.pathname + window.location.search)
     if (token) {
-      login('USER', token)
+      login('USER', token, { name: hash.get('name') || '', provider: hash.get('provider') || '' })
       nav(from, { replace: true })
     } else {
       setOauthErr(error)
