@@ -37,6 +37,7 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 - 플랫폼별 설정값은 `netlify.toml`, `render.yaml` 참고
 
 ## 실행·검증 명령
+- Docker: `docker compose up --build api` → `GET localhost:8000/api/health` (Render 백엔드는 Docker 런타임으로 이 Dockerfile을 빌드)
 - 백엔드: `.venv/Scripts/python -m uvicorn backend.app.main:app --reload` → `GET /api/health`
 - 프런트: `cd frontend && npm ci && npm run build` (개발 서버 `npm run dev`)
 - 워크플로 수정 시 actionlint로 검사

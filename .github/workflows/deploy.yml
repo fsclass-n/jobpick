@@ -31,6 +31,8 @@ jobs:
               - 'rpa/**'
               - 'requirements.txt'
               - '.python-version'
+              - 'Dockerfile'
+              - 'docker-compose.yml'
 
   frontend:
     name: Frontend build
@@ -63,6 +65,8 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python -m compileall -q backend rpa
+      - name: Docker build
+        run: docker build -t jobpick-api .
       - name: App start & health check
         run: |
           python -m uvicorn backend.app.main:app --port 8000 &
