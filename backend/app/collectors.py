@@ -33,12 +33,30 @@ SARAMIN_LOCS = "101000 102000 108000"          # 서울전체 경기전체 인�
 WORKNET_REGIONS = "11000|41000|28000"          # 서울|경기|인천
 HRD_AREAS = [("11", "서울"), ("41", "경기"), ("28", "인천")]
 
-# 웹·IT 개발 관련 직종 판별(나라일터/서울 공고 제목·직종명 필터)
+# 웹·IT 개발 관련 직종 판별(공고 제목·직종명 기준 — 본문은 스킬 추출에만 사용)
+# '개발'은 금형개발·제품개발 같은 오탐이 많아 복합 패턴으로 한정하고,
+# 비IT 직종은 NEG_RE로 걸러낸다.
 DEV_RE = re.compile(
-    r"개발|프로그래머|웹|소프트웨어|\bSW\b|\bIT\b|정보통신|전산|컴퓨터|데이터|"
-    r"\bDB\b|시스템|네트워크|보안|인공지능|\bAI\b|코딩|플랫폼|서버|디지털|엔지니어|기술",
+    r"웹\s*개발|앱\s*개발|SW\s*개발|소프트웨어|\bSW\b|프론트엔드|백엔드|풀스택|"
+    r"시스템\s*(엔지니어|개발|운영|구축|관리|사업)|정보시스템|네트워크\s*(엔지니어|구축|관리|운영)|"
+    r"데이터베이스|\bDBA\b|\bIT\b|정보통신|전산|\bICT\b|정보처리|"
+    r"인공지능|\bAI\b|데이터(베이스|엔지니어|분석|사이언스|과학)|빅데이터|머신러닝|딥러닝|"
+    r"클라우드|devops|정보보안|사이버보안|보안관제|웹|프로그래머|코딩|개발자|개발팀|개발부|"
+    r"개발문서|(?<![가-힣])서버",
     re.IGNORECASE,
 )
+NEG_RE = re.compile(
+    r"금형|제관|판금|용접|사출|다이캐스팅|창호|조경|토목|건축|시공|육가공|푸드|주방|홀서|요양|간호|"
+    r"조리|미용|피부|세무|회계|운전|물류|택배|배송|경비|미화|시설관리|청소|생산직|제조|목재|인쇄|"
+    r"섬유|의류|패션|농업|축산|철강|화학|의료|병원|약국|약사|부동산|보험|텔레마케터|콜센터|상담원|"
+    r"매장|판매|서빙|바리스타|요리|식당|마트|편의점|레이저|절곡|CNC|MCT|선반|밀링|사무원|사무보조|"
+    r"경리|총무|교사|조교|조사요원|데이터\s*조사|DB\s*조사|안전관리|품질관리",
+    re.IGNORECASE,
+)
+
+
+def _is_dev(text: str) -> bool:
+    return bool(DEV_RE.search(text)) and not NEG_RE.search(text)
 
 WORKNET_KEYWORDS = [
     "웹개발", "웹 개발", "프론트엔드", "백엔드", "풀스택", "웹프로그래머",
@@ -236,85 +254,105 @@ def collect_hrd(client: httpx.Client) -> tuple[list[dict], str]:
     return out, f"{len(out)}건"
 
 
+NARA_REGIONS = [("R3010", "서울"), ("R3017", "경기"), ("R3011", "인천")]  # 나라일터 workRgnLst
+NARA_PAGES_PER_REGION = 20   # 지역별 최근 2,000건 스캔 (개발직은 희박해 넉넉히 조회)
+
+
 def collect_narajater(client: httpx.Client) -> tuple[list[dict], str]:
     """인사혁신처 공공취업정보(나라일터) — data.go.kr 일반 인증키, 개인 자동승인."""
     if not DATA_GO_KR_KEY:
         return [], "DATA_GO_KR_API_KEY 미설정"
     wanted = {"서울", "경기", "인천"}
-    out: dict[str, dict] = {}
-    for page in range(1, 6):                     # 최대 500건 중 수도권·개발직만 선별
-        r = client.get("https://apis.data.go.kr/1051000/recruitment/list", params={
-            "serviceKey": DATA_GO_KR_KEY, "pageNo": page, "numOfRows": 100,
-        })
-        r.raise_for_status()
-        root = ET.fromstring(r.text)
-        code = root.findtext(".//header/resultCode") or "00"
-        if code not in ("00", "03"):             # 03: 결과 없음
-            raise RuntimeError(f"나라일터 API 오류 resultCode={code}")
-        items = root.findall(".//body/items/item")
-        if not items:
-            break
-        for it in items:
-            region = _region(it.findtext("workRgnNmLst") or "")
-            if region not in wanted:
-                continue
-            title = (it.findtext("recrutTitle") or "").strip()
-            ncs = it.findtext("ncsCdNmLst") or ""
-            inst = (it.findtext("instNm") or "").strip()
-            if not title or not inst or not DEV_RE.search(f"{title} {ncs}"):
-                continue
-            sn = it.findtext("recrutPblntSn") or f"{inst}-{title}"
-            out[sn] = {
-                "external_id": f"narajater:{sn}",
-                "company": inst,
-                "title": title,
-                "region": region,
-                "career": it.findtext("hireTypeNmLst") or "관계없음",
-                "size": "공공",
-                "source": "나라일터",
-                "deadline": _deadline(it.findtext("recrutNopendYmd") or ""),
-                "skills": _skills(title, ncs),
-                "values": [ncs] if ncs else [],
-                "radar": {},
-                "url": "",
-            }
+    out: dict[int, dict] = {}
+    for code, name in NARA_REGIONS:
+        for page in range(1, NARA_PAGES_PER_REGION + 1):
+            r = client.get("https://apis.data.go.kr/1051000/recruitment/list", params={
+                "serviceKey": DATA_GO_KR_KEY, "pageNo": page, "numOfRows": 100,
+                "workRgnLst": code,
+            })
+            r.raise_for_status()
+            data = r.json()
+            if str(data.get("resultCode")) not in ("200", "00"):
+                raise RuntimeError(f"나라일터 API 오류 {data.get('resultCode')}: {data.get('resultMsg')}")
+            items = data.get("result") or []
+            if not items:
+                break
+            for it in items:
+                sn = it.get("recrutPblntSn")
+                title = (it.get("recrutPbancTtl") or "").strip()
+                inst = (it.get("instNm") or "").strip()
+                ncs = it.get("ncsCdNmLst") or ""
+                if not sn or sn in out or not title or not inst:
+                    continue
+                if it.get("ongoingYn") == "N":
+                    continue
+                if not _is_dev(f"{title} {ncs}"):
+                    continue
+                regions = [w.strip() for w in (it.get("workRgnNmLst") or "").split(",")]
+                out[sn] = {
+                    "external_id": f"narajater:{sn}",
+                    "company": inst,
+                    "title": title,
+                    "region": next((w for w in wanted if w in regions), name),
+                    "career": it.get("recrutSeNm") or "관계없음",
+                    "size": "공공",
+                    "source": "나라일터",
+                    "deadline": _deadline(it.get("pbancEndYmd") or ""),
+                    "skills": _skills(title, ncs, it.get("aplyQlfcCn") or ""),
+                    "values": [ncs] if ncs else [],
+                    "radar": {},
+                    "url": (it.get("srcUrl") or "").strip(),
+                }
     return list(out.values()), f"{len(out)}건"
 
 
+SEOUL_SCAN_ROWS = 5000   # 최근 5,000건 스캔
+
+
 def collect_seoul(client: httpx.Client) -> tuple[list[dict], str]:
-    """서울 일자리플러스센터 채용정보 — openAPI.seoul.go.kr 개인 즉시 발급."""
+    """서울 일자리플러스센터 채용정보 recMntList — openAPI.seoul.go.kr 개인 즉시 발급."""
     if not SEOUL_KEY:
         return [], "SEOUL_OPEN_API_KEY 미설정"
-    r = client.get(f"http://openapi.seoul.go.kr:8088/{SEOUL_KEY}/json/GetJobInfo/1/1000/")
-    r.raise_for_status()
-    data = r.json().get("GetJobInfo", {})
-    code = (data.get("RESULT") or {}).get("CODE", "INFO-000")
-    if code == "INFO-200":
-        return [], "데이터 없음"
-    if code != "INFO-000":
-        raise RuntimeError(f"서울 열린데이터 API 오류 {code}")
+    import hashlib
     out = []
-    for row in data.get("row") or []:
-        job_nm = row.get("JOBCODE_NM") or ""
-        duty = row.get("DTY_CN") or ""
-        company = (row.get("CMPNY_NM") or "").strip()
-        if not company or not DEV_RE.search(f"{job_nm} {duty}"):
-            continue
-        reg_no = row.get("JO_REGIST_NO") or row.get("JO_REQST_CO_NM") or f"{company}-{job_nm}"
-        out.append({
-            "external_id": f"seoul:{reg_no}",
-            "company": company,
-            "title": (row.get("RCRIT_TITLE") or job_nm or "채용").strip(),
-            "region": "서울",
-            "career": row.get("CAREER_CND_NM") or "관계없음",
-            "size": row.get("EMPLYM_STLE_CMMN_MM") or "민간",
-            "source": "서울 일자리플러스",
-            "deadline": _deadline(row.get("RCRIT_END_DE") or ""),
-            "skills": _skills(job_nm, duty),
-            "values": [],
-            "radar": {},
-            "url": (row.get("JO_REGISTER_URL") or "").strip(),
-        })
+    for start in range(1, SEOUL_SCAN_ROWS + 1, 1000):
+        r = client.get(f"http://openapi.seoul.go.kr:8088/{SEOUL_KEY}/json/recMntList/{start}/{start + 999}/")
+        r.raise_for_status()
+        data = r.json().get("recMntList", {})
+        code = (data.get("RESULT") or {}).get("CODE", "INFO-000")
+        if code == "INFO-200":
+            break
+        if code != "INFO-000":
+            raise RuntimeError(f"서울 열린데이터 API 오류 {code}: {(data.get('RESULT') or {}).get('MESSAGE', '')[:60]}")
+        rows = data.get("row") or []
+        if not rows:
+            break
+        for row in rows:
+            title = (row.get("TITLE") or "").strip()
+            company = (row.get("COMPANY") or "").strip()
+            job_nm = row.get("JOBS_NM") or ""
+            duty = row.get("JOB_CONT") or ""
+            if not company or not title or not _is_dev(f"{title} {job_nm}"):
+                continue
+            m = re.search(r"(\d{2,4})-(\d{1,2})-(\d{1,2})", row.get("CLOSE_DT") or "")
+            deadline = f"{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else ""
+            digest = hashlib.md5(f"{company}|{title}|{row.get('REG_DT', '')}".encode()).hexdigest()[:12]
+            out.append({
+                "external_id": f"seoul:{digest}",
+                "company": company,
+                "title": title,
+                "region": "서울",
+                "career": (row.get("CAREER") or "관계없음").split(" ")[0] or "관계없음",
+                "size": "민간",
+                "source": "서울 일자리플러스",
+                "deadline": deadline,
+                "skills": _skills(title, job_nm, duty, row.get("CERTIFICATE") or ""),
+                "values": [job_nm] if job_nm else [],
+                "radar": {},
+                "url": "",
+            })
+        if len(out) >= 300:
+            break
     return out, f"{len(out)}건"
 
 
