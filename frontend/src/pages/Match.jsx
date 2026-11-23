@@ -4,15 +4,26 @@ import { Chip, Icon, PageHead, Radar, Ring, SourceBadge, Tile } from '../compone
 import { PROFILE } from '../data/mock'
 import { useApp } from '../state'
 
-const FILTERS = [['region', ['서울', '경기', '부산']], ['career', ['신입', '경력 1~3년']], ['size', ['대기업', '중견', '공공기관', '스타트업']]]
+const FILTERS = [['region', ['서울', '경기', '인천']], ['job', ['AI', '개발', '데이터']]]
 const SORTS = [['fit', '적합도순'], ['deadline', '마감임박순'], ['company', '기업명순']]
+
+const JOB_KEYS = {
+  AI: ['ai', '인공지능', '머신러닝', '딥러닝', 'ml ', 'llm'],
+  개발: ['개발', 'sw', '프로그래머', '엔지니어', '프론트', '백엔드', '웹', 'it', '전산', '시스템', '펌웨어', 'firmware', 'php', 'java', 'react', '앱', '보안', '네트워크'],
+  데이터: ['데이터', '분석', '빅데이터', 'dba', '통계'],
+}
+const jobCats = (j) => {
+  const t = `${j.title} ${(j.skills || []).join(' ')}`.toLowerCase()
+  return Object.keys(JOB_KEYS).filter((k) => JOB_KEYS[k].some((w) => t.includes(w)))
+}
 
 export default function Match() {
   const { fitOf, target, setTargetId, scraps, toggleScrap, cutoff, jobs } = useApp()
-  const [f, setF] = useState({ q: '', region: '', career: '', size: '' })
+  const [f, setF] = useState({ q: '', region: '', job: '' })
   const [sort, setSort] = useState('fit')
   const list = jobs.filter((j) =>
-    (!f.q || (j.title + j.company + j.skills.join()).toLowerCase().includes(f.q.toLowerCase())) && FILTERS.every(([k]) => !f[k] || j[k] === f[k]))
+    (!f.q || (j.title + j.company + (j.skills || []).join()).toLowerCase().includes(f.q.toLowerCase()))
+    && (!f.region || j.region.includes(f.region)) && (!f.job || jobCats(j).includes(f.job)))
     .sort((a, b) => (sort === 'fit' ? fitOf(b) - fitOf(a) : sort === 'deadline' ? a.deadline.localeCompare(b.deadline) : a.company.localeCompare(b.company)))
 
   return (
@@ -25,7 +36,7 @@ export default function Match() {
         {FILTERS.map(([k, opts]) => ['', ...opts].map((o) => (
           <button key={k + o} onClick={() => setF({ ...f, [k]: o })} className={`h-9 rounded-full px-4 text-xs font-semibold transition ${f[k] === o ? 'bg-navy text-white' : 'bg-white ring-1 ring-line hover:ring-navy'} ${o === '' ? 'hidden' : ''}`}>{o}</button>
         )))}
-        {FILTERS.some(([k]) => f[k]) && <button onClick={() => setF({ ...f, region: '', career: '', size: '' })} className="h-9 rounded-full px-3 text-xs font-semibold text-tie">초기화</button>}
+        {FILTERS.some(([k]) => f[k]) && <button onClick={() => setF({ ...f, region: '', job: '' })} className="h-9 rounded-full px-3 text-xs font-semibold text-tie">초기화</button>}
         <div className="ml-auto flex gap-1 rounded-full bg-white p-1 ring-1 ring-line">
           {SORTS.map(([k, l]) => <button key={k} onClick={() => setSort(k)} className={`h-8 rounded-full px-3 text-xs font-semibold ${sort === k ? 'bg-bg text-navy' : 'text-sub'}`}>{l}</button>)}
         </div>
@@ -43,7 +54,7 @@ export default function Match() {
                   <button onClick={(e) => { e.stopPropagation(); toggleScrap(j.id) }} aria-label="스크랩" className="grid h-10 w-10 place-items-center rounded-full bg-bg hover:bg-sky">{Icon.heart(scraps.includes(j.id))}</button>
                 </div>
                 <div className="mt-4 text-xs font-semibold text-sub">{j.company} · {j.region}</div>
-                <div className="mt-1 line-clamp-2 min-h-[56px] text-lg font-extrabold leading-snug">{j.title}</div>
+                <div className="mt-1 min-h-[56px] text-lg font-extrabold leading-snug">{j.title}</div>
                 <div className="mt-3 flex min-h-7 flex-wrap content-start gap-1">{j.skills.slice(0, 3).map((s) => <Chip key={s} tone={PROFILE.skills.includes(s) ? 'mint' : 'line'}>{s}</Chip>)}</div>
                 <div className="mt-auto flex items-center justify-between border-t border-line pt-4">
                   <div><div className="num text-2xl font-bold">{fit}%</div><div className={`text-[11px] font-semibold ${fit >= cutoff ? 'text-[#0b8a68]' : 'text-tie'}`}>{fit >= cutoff ? '합격선 도달' : `${cutoff - fit}점 부족`}</div></div>
