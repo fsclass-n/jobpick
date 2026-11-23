@@ -1,39 +1,54 @@
-import { useEffect, useState } from 'react'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import Layout from './components/Layout'
+import { AppProvider, useApp } from './state'
+import Home from './pages/Home'
+import { AdminLogin, Login } from './pages/Auth'
+import Match from './pages/Match'
+import Gap from './pages/Gap'
+import Rewrite from './pages/Rewrite'
+import Rehearse from './pages/Rehearse'
+import Journey from './pages/Journey'
+import Admin from './pages/Admin'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
+function Guard({ need, children }) {
+  const { role } = useApp()
+  const loc = useLocation()
+  if (role === need) return children
+  if (need === 'ADMIN') return role ? <Info title="403" body="접근 권한이 없습니다." /> : <Navigate to="/admin/login" replace />
+  return role ? children : <Navigate to="/login" state={{ from: loc.pathname }} replace />
+}
 
-const STATUS = {
-  checking: { label: 'API 서버 연결 확인 중 (최대 1분)', dot: 'bg-amber-400 animate-pulse' },
-  ok: { label: 'API 서버 연결됨', dot: 'bg-emerald-500' },
-  error: { label: 'API 서버 연결 실패', dot: 'bg-rose-500' },
-  none: { label: 'API 주소 미설정', dot: 'bg-slate-400' },
+function Info({ title, body }) {
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+      <h1 className="font-display text-4xl font-extrabold">{title}</h1>
+      <p className="mt-3 text-slate-600">{body}</p>
+      <Link to="/" className="mt-6 inline-block text-brand">홈으로</Link>
+    </div>
+  )
 }
 
 export default function App() {
-  const [status, setStatus] = useState(API_BASE_URL ? 'checking' : 'none')
-
-  useEffect(() => {
-    if (!API_BASE_URL) return
-    fetch(`${API_BASE_URL}/api/health`, { signal: AbortSignal.timeout(90_000) })
-      .then((res) => setStatus(res.ok ? 'ok' : 'error'))
-      .catch(() => setStatus('error'))
-  }, [])
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-50 px-6 text-center text-slate-800">
-      <h1 className="text-5xl font-extrabold tracking-tight">
-        job<span className="text-indigo-600">pick</span>
-      </h1>
-      <p className="max-w-md text-lg text-slate-600">
-        공고와 나를 맞대어 딱 맞는 기회를 고른다. 생성형 AI &amp; RPA 기반 맞춤형 커리어 컨설팅
-      </p>
-      <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm shadow">
-        <span className={`h-2.5 w-2.5 rounded-full ${STATUS[status].dot}`} />
-        {STATUS[status].label}
-        {USE_MOCK && <span className="ml-2 rounded bg-indigo-100 px-2 text-indigo-700">MOCK</span>}
-      </div>
-      <p className="text-xs text-slate-400">화면 개발 진행 중입니다.</p>
-    </main>
+    <BrowserRouter>
+      <AppProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="login" element={<Login />} />
+            <Route path="admin/login" element={<AdminLogin />} />
+            <Route path="match" element={<Guard need="USER"><Match /></Guard>} />
+            <Route path="gap" element={<Guard need="USER"><Gap /></Guard>} />
+            <Route path="rewrite" element={<Guard need="USER"><Rewrite /></Guard>} />
+            <Route path="rehearse" element={<Guard need="USER"><Rehearse /></Guard>} />
+            <Route path="journey" element={<Guard need="USER"><Journey /></Guard>} />
+            <Route path="admin" element={<Guard need="ADMIN"><Admin /></Guard>} />
+            <Route path="terms" element={<Info title="이용약관" body="서비스 이용약관은 정식 오픈 전 확정됩니다." />} />
+            <Route path="privacy" element={<Info title="개인정보처리방침" body="자소서 원문은 분석 요청에만 사용하며 AI 학습에 사용하지 않습니다." />} />
+            <Route path="*" element={<Info title="404" body="페이지를 찾을 수 없습니다." />} />
+          </Route>
+        </Routes>
+      </AppProvider>
+    </BrowserRouter>
   )
 }

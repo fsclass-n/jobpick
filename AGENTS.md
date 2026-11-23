@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## 서비스 콘셉트
+- jobpick = Pick 여정: **Match**(공고 매칭·합격 거리) → **Gap**(갭 로드맵) → **Rewrite**(리라이팅 스튜디오) → **Rehearse**(모의면접), 단계별 결과를 **Pick Score**(적합도 50 + 역량 커버리지 30 + 면접 준비도 20)로 통합
+- 권한은 `USER`(체험 모드 포함)·`ADMIN`(TOTP 필수) 2종. 테스트 관리자/샌드박스는 폐지
+
 jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구사항은 `docs/산출물/요구사항_명세서.md`를 기준으로 합니다.
 
 ## 구조
@@ -22,7 +26,6 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 - `VITE_` 접두사 변수는 브라우저에 노출되므로 비밀값을 넣지 않음
 - 권한 검사는 프런트 라우트 가드와 백엔드 API 양쪽에 적용
   - `/api/admin/**`: 정식 관리자 토큰(`ADMIN_JWT_SECRET` 서명 + TOTP 통과)만 허용, 그 외 토큰은 403
-  - `/api/sandbox/admin/**`: 테스트 관리자 토큰, 샌드박스 데이터만 접근
 - 정식 관리자 계정은 서버 초기화 스크립트로만 생성 (회원가입 API로 생성 불가)
 
 ## 배포
@@ -31,7 +34,7 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 - `.github/workflows/deploy.yml`은 CI 게이트 (프런트 빌드, 백엔드 기동·`/api/health` 확인). Render는 CI 통과 커밋만 배포(`checksPass`)
 - `frontend/**` 변경 → Netlify + Render 프런트, `backend/**`·`rpa/**`·`requirements.txt`·`.python-version` 변경 → Render API
 - Python 버전은 `.python-version`(3.11)으로 고정 (Render 기본값 3.14)
-- 플랫폼별 설정값은 `docs/산출물/배포_환경설정.md` 참고
+- 플랫폼별 설정값은 `netlify.toml`, `render.yaml` 참고
 
 ## 실행·검증 명령
 - 백엔드: `.venv/Scripts/python -m uvicorn backend.app.main:app --reload` → `GET /api/health`
@@ -47,5 +50,6 @@ jobpick 저장소에서 작업할 때 따르는 규칙입니다. 전체 요구�
 - 일별 진행 내역은 `docs/프로젝트_진행일지/`에 팀원별 담당 업무와 함께 기록
 
 ## 미결 사항
-- 샌드박스 데이터 분리 방식(별도 스키마 vs `is_sandbox` 컬럼)은 2단계 ERD 설계 시 결정
+- Pick Score 가중치(50/30/20)는 2단계에서 샘플 데이터로 검증 후 조정
+- 관리자 로그인(TOTP)은 아직 미구현이라 `/api/admin/login`이 503/501을 반환함 (의도된 동작)
 
