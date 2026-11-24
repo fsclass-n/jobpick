@@ -52,7 +52,7 @@ function AccountMenu() {
           {(isAdmin ? [['/admin', '관리자 콘솔']] : [['/journey', '내 여정 · Pick Score'], ['/match', '스크랩한 공고']]).map(([to, l]) => (
             <button key={to} role="menuitem" onClick={() => { setOpen(false); nav(to) }} className="block w-full rounded-2xl px-3 py-2.5 text-left text-sm hover:bg-bg">{l}</button>
           ))}
-          <button role="menuitem" onClick={() => { setOpen(false); logout(); nav('/') }} className="block w-full rounded-2xl px-3 py-2.5 text-left text-sm text-tie hover:bg-tie/10">로그아웃</button>
+          <button role="menuitem" onClick={() => { setOpen(false); nav('/'); logout() }} className="block w-full rounded-2xl px-3 py-2.5 text-left text-sm text-tie hover:bg-tie/10">로그아웃</button>
         </div>
       )}
     </div>
@@ -61,6 +61,7 @@ function AccountMenu() {
 
 function Header() {
   const { role, isAdmin, logout, user } = useApp()
+  const nav = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
@@ -119,7 +120,7 @@ function Header() {
             ))}
           </nav>
           <div className="pt-4">
-            {role ? <button onClick={() => { setOpen(false); logout() }} className="h-12 w-full rounded-full bg-bg text-sm font-semibold text-tie">로그아웃</button>
+            {role ? <button onClick={() => { setOpen(false); nav('/'); logout() }} className="h-12 w-full rounded-full bg-bg text-sm font-semibold text-tie">로그아웃</button>
               : <Link to="/login" className="flex h-12 items-center justify-center gap-2 rounded-full bg-navy text-sm font-semibold text-white">로그인 · 시작하기 {Icon.arrow()}</Link>}
           </div>
         </aside>

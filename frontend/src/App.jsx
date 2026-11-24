@@ -2,7 +2,7 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react
 import Layout from './components/Layout'
 import { AppProvider, useApp } from './state'
 import Home from './pages/Home'
-import { AdminLogin, Login } from './pages/Auth'
+import { Login } from './pages/Auth'
 import Match from './pages/Match'
 import Gap from './pages/Gap'
 import Rewrite from './pages/Rewrite'
@@ -20,15 +20,17 @@ function UserOnly({ children }) {
 function AdminOnly({ children }) {
   const { role, isAdmin } = useApp()
   if (isAdmin) return children
-  return role ? <Info title="403" body="관리자 권한이 필요합니다." /> : <Navigate to="/admin/login" replace />
+  return role
+    ? <Info title="403" body="관리자 권한이 필요합니다." />
+    : <Info title="관리자 콘솔" body="로그인 페이지에서 관리자 계정 이메일로 로그인하면 이용할 수 있습니다." to="/login" label="로그인으로 이동" />
 }
 
-function Info({ title, body }) {
+function Info({ title, body, to = '/', label = '메인으로' }) {
   return (
     <div className="wrap py-24 text-center">
       <div className="num text-7xl font-bold">{title}</div>
       <p className="mt-4 text-sub">{body}</p>
-      <Link to="/" className="mt-8 inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-semibold text-white">메인으로</Link>
+      <Link to={to} className="mt-8 inline-flex h-12 items-center rounded-full bg-navy px-6 text-sm font-semibold text-white">{label}</Link>
     </div>
   )
 }
@@ -41,7 +43,6 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="login" element={<Login />} />
-            <Route path="admin/login" element={<AdminLogin />} />
             <Route path="match" element={<UserOnly><Match /></UserOnly>} />
             <Route path="gap" element={<UserOnly><Gap /></UserOnly>} />
             <Route path="rewrite" element={<UserOnly><Rewrite /></UserOnly>} />

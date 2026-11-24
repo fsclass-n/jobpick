@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { IMG } from '../data/credits'
 import { useApp } from '../state'
-import { Btn, Chip, Icon, Logo, LogoMark } from '../components/ui'
+import { Btn, Chip, Icon, LogoMark } from '../components/ui'
 
 const RULES = [
   ['8자 이상', (p) => p.length >= 8],
@@ -29,7 +29,6 @@ export function Login() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [oauthErr, setOauthErr] = useState('')
-  const ok = RULES.every(([, f]) => f(pw))
 
   // 소셜 로그인 완료 후 /login#token=... 형태로 돌아오는 콜백 처리
   useEffect(() => {
@@ -51,6 +50,15 @@ export function Login() {
   if (isAdmin) return <Navigate to="/admin" replace />
 
   const enterUser = () => { login('USER'); nav(from, { replace: true }) }
+  const enterEmail = async () => {
+    if (!API_BASE) { enterUser(); return }
+    setBusy(true); setErr('')
+    try {
+      const r = await api('/api/auth/login', { method: 'POST', body: { email, password: pw } })
+      login(r.role, r.access_token)
+      nav(r.role === 'USER' ? from : '/admin', { replace: true })
+    } catch (e) { setErr(e.message) } finally { setBusy(false) }
+  }
   const social = (id) => {
     if (!API_BASE) { enterUser(); return }
     window.location.href = `${API_BASE}/api/auth/oauth/${id}/login`
@@ -90,14 +98,18 @@ export function Login() {
           </button>
 
           <div className="my-7 flex items-center gap-3 text-xs text-sub"><span className="h-px flex-1 bg-line" />또는 이메일<span className="h-px flex-1 bg-line" /></div>
-          <label className="text-xs font-semibold" htmlFor="email">이메일</label>
-          <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@example.com" className={field} />
-          <label className="mt-4 text-xs font-semibold" htmlFor="pw">비밀번호</label>
-          <input id="pw" value={pw} onChange={(e) => setPw(e.target.value)} type="password" className={field} />
-          <ul className="mt-3 flex flex-wrap gap-1.5">
-            {RULES.map(([l, f]) => <li key={l}><Chip tone={f(pw) ? 'mint' : 'line'}>{f(pw) ? '✓' : '·'} {l}</Chip></li>)}
-          </ul>
-          <Btn disabled={!ok || !email} onClick={enterUser} size="lg" className="mt-6 w-full">이메일로 로그인</Btn>
+          <form onSubmit={(e) => { e.preventDefault(); enterEmail() }}>
+            <label className="text-xs font-semibold" htmlFor="email">이메일</label>
+            <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" required autoComplete="username" placeholder="you@example.com" className={field} />
+            <label className="mt-4 block text-xs font-semibold" htmlFor="pw">비밀번호</label>
+            <input id="pw" value={pw} onChange={(e) => setPw(e.target.value)} type="password" required autoComplete="current-password" className={field} />
+            <ul className="mt-3 flex flex-wrap gap-1.5">
+              {RULES.map(([l, f]) => <li key={l}><Chip tone={f(pw) ? 'mint' : 'line'}>{f(pw) ? '✓' : '·'} {l}</Chip></li>)}
+            </ul>
+            <Btn type="submit" disabled={!email || !pw || busy} size="lg" className="mt-6 w-full">{busy ? '확인 중…' : '이메일로 로그인'}</Btn>
+          </form>
+          {err && <p className="mt-2 text-xs text-tie">{err}</p>}
+          <p className="mt-3 text-[11px] leading-relaxed text-sub">처음 사용하는 이메일은 자동으로 가입됩니다. 관리자 계정 이메일로 로그인하면 관리자 콘솔로 이동합니다.</p>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {SOCIAL.map((s) => (
               <button
@@ -117,48 +129,8 @@ export function Login() {
               <div className="text-xs"><b className="text-sm">QA · 시연용 테스트 관리자</b><br /><span className="text-sub">관리자 화면 전체를 읽기 전용으로 둘러봅니다</span></div>
               <Btn variant="soft" size="sm" onClick={enterTestAdmin} disabled={busy}>{busy ? '서버 연결 중…' : '테스트 관리자 로그인'}</Btn>
             </div>
-            {err && <p className="mt-2 text-xs text-tie">{err}</p>}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-export function AdminLogin() {
-  const { login, role } = useApp()
-  const nav = useNavigate()
-  const [email, setEmail] = useState('')
-  const [pw, setPw] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
-  if (role === 'ADMIN') return <Navigate to="/admin" replace />
-  const submit = async (e) => {
-    e.preventDefault(); setBusy(true); setErr('')
-    try {
-      const r = await api('/api/admin/login', { method: 'POST', body: { email, password: pw } })
-      login('ADMIN', r.access_token)
-      nav('/admin', { replace: true })
-    } catch (ex) { setErr(ex.message) } finally { setBusy(false) }
-  }
-  return (
-    <div className="wrap py-8">
-      <div className="relative grid min-h-[600px] place-items-center overflow-hidden rounded-[36px] bg-navy px-4 py-16">
-        <div className="blob -left-20 -top-20 h-80 w-80 bg-suit" />
-        <div className="blob -bottom-20 -right-10 h-80 w-80 bg-tie/40" />
-        <form onSubmit={submit} className="relative w-full max-w-md rounded-[32px] bg-white/5 p-10 text-white ring-1 ring-white/10 backdrop-blur">
-          <Logo light />
-          <Chip tone="tie" className="mt-8">관리자 전용</Chip>
-          <h1 className="mt-3 text-3xl font-extrabold">관리자 로그인</h1>
-          <p className="mt-2 text-sm text-white/60">서버 환경 변수 <code className="text-mint">ADMIN_EMAIL</code>·<code className="text-mint">ADMIN_PASSWORD</code>에 등록된 계정으로만 진입합니다. 모든 데이터의 생성·수정·삭제 권한이 부여됩니다.</p>
-          <label className="mt-8 block text-xs font-semibold text-white/70" htmlFor="aemail">관리자 이메일</label>
-          <input id="aemail" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1.5 h-12 w-full rounded-2xl bg-white/10 px-4 text-sm outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-mint" />
-          <label className="mt-4 block text-xs font-semibold text-white/70" htmlFor="apw">비밀번호</label>
-          <input id="apw" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} required className="mt-1.5 h-12 w-full rounded-2xl bg-white/10 px-4 text-sm outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-mint" />
-          {err && <p className="mt-3 text-xs text-tie">{err}</p>}
-          <Btn variant="mint" size="lg" disabled={busy || !email || !pw} className="mt-6 w-full">{busy ? '확인 중… (서버 기동 최대 1분)' : '관리자 진입'}</Btn>
-          <p className="mt-6 text-[11px] text-white/40">5회 실패 시 15분간 잠깁니다. 테스트 관리자는 <Link to="/login" className="underline">로그인 화면</Link>에서 진입하세요.</p>
-        </form>
       </div>
     </div>
   )

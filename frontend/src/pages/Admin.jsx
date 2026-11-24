@@ -120,14 +120,14 @@ export default function Admin() {
                       <td className="px-4 py-3">{u.email}</td><td className="px-4">{u.name}</td><td className="px-4 text-sub">{u.joined}</td>
                       <td className="px-4">
                         <select value={u.role} disabled={readOnly} onChange={(e) => write(() => call(`/api/admin/users/${encodeURIComponent(u.email)}`, { method: 'PATCH', body: { role: e.target.value } }), '권한을 변경했습니다.')} className="h-9 rounded-full bg-bg px-3 text-xs font-semibold ring-1 ring-line disabled:opacity-50">
-                          <option value="USER">USER</option><option value="TEST_ADMIN">TEST_ADMIN</option>
+                          <option value="USER">USER</option><option value="TEST_ADMIN">TEST_ADMIN</option><option value="ADMIN">ADMIN</option>
                         </select>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="border-t border-line px-4 py-3 text-[11px] text-sub">실제 관리자 권한은 화면에서 부여할 수 없으며, 서버 환경 변수 ADMIN_EMAIL/ADMIN_PASSWORD 계정으로만 진입합니다.</p>
+              <p className="border-t border-line px-4 py-3 text-[11px] text-sub">권한 변경은 즉시 적용됩니다. ADMIN으로 지정된 계정은 로그인 페이지에서 해당 이메일 + 관리자 비밀번호(서버 환경 변수 ADMIN_PASSWORD)로 진입합니다.</p>
             </Tile>
           )}
 

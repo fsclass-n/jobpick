@@ -27,21 +27,33 @@ def issue(role: str, sub: str) -> str:
     return jwt.encode({"sub": sub, "role": role, "exp": exp}, ADMIN_SECRET if admin else USER_SECRET, algorithm="HS256")
 
 
-def check_admin_login(email: str, password: str, client: str) -> None:
-    expected_email = os.getenv("ADMIN_EMAIL", "")
-    expected_password = os.getenv("ADMIN_PASSWORD", "")
-    if not expected_email or not expected_password:
-        raise HTTPException(503, "관리자 계정(ADMIN_EMAIL/ADMIN_PASSWORD)이 서버에 설정되지 않았습니다.")
+def _guard(ok: bool, client: str) -> None:
     now = time.time()
     recent = [t for t in _failures.get(client, []) if now - t < LOCK_SECONDS]
     if len(recent) >= MAX_FAILURES:
         raise HTTPException(429, f"로그인 {MAX_FAILURES}회 실패로 잠겼습니다. 잠시 후 다시 시도하세요.")
-    ok = hmac.compare_digest(email.encode(), expected_email.encode()) and \
-        hmac.compare_digest(password.encode(), expected_password.encode())
     if not ok:
         _failures[client] = recent + [now]
         raise HTTPException(401, "관리자 계정 정보가 올바르지 않습니다.")
     _failures.pop(client, None)
+
+
+def check_admin_login(email: str, password: str, client: str) -> None:
+    """환경 변수 관리자 계정(ADMIN_EMAIL/ADMIN_PASSWORD)과 정확히 일치하는지 검증."""
+    expected_email = os.getenv("ADMIN_EMAIL", "")
+    expected_password = os.getenv("ADMIN_PASSWORD", "")
+    if not expected_email or not expected_password:
+        raise HTTPException(503, "관리자 계정(ADMIN_EMAIL/ADMIN_PASSWORD)이 서버에 설정되지 않았습니다.")
+    _guard(hmac.compare_digest(email.encode(), expected_email.encode())
+           and hmac.compare_digest(password.encode(), expected_password.encode()), client)
+
+
+def check_admin_password(password: str, client: str) -> None:
+    """회원 관리에서 ADMIN으로 지정된 계정: 관리자 비밀번호(ADMIN_PASSWORD)만 검증."""
+    expected_password = os.getenv("ADMIN_PASSWORD", "")
+    if not expected_password:
+        raise HTTPException(503, "관리자 계정(ADMIN_EMAIL/ADMIN_PASSWORD)이 서버에 설정되지 않았습니다.")
+    _guard(hmac.compare_digest(password.encode(), expected_password.encode()), client)
 
 
 def _decode(token: str, secret: str, roles: set[str]):

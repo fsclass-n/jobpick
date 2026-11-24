@@ -14,13 +14,12 @@ from sqlalchemy.orm import Session
 
 from .data import CUTOFF, PROFILE_SKILLS
 from .db import Job, User, get_db, job_out, user_out
-from .security import USER_SECRET, check_admin_login, issue, require_admin_view, require_user
+from .security import USER_SECRET, check_admin_login, check_admin_password, issue, require_admin_view, require_user
 
 auth = APIRouter(prefix="/api/auth", tags=["auth"])
 oauth = APIRouter(prefix="/api/auth/oauth", tags=["oauth"])
 api = APIRouter(prefix="/api", tags=["journey"], dependencies=[Depends(require_user)])
 admin = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin_view)])
-admin_auth = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 @auth.post("/demo")
@@ -152,15 +151,39 @@ def oauth_callback(provider: str, request: Request, code: str = "", state: str =
     return response
 
 
-class AdminLogin(BaseModel):
-    email: str = Field(min_length=1, max_length=255)
+class LoginIn(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=1, max_length=256)
 
 
-@admin_auth.post("/login")
-def admin_login(body: AdminLogin, request: Request):
-    check_admin_login(body.email, body.password, request.client.host if request.client else "unknown")
-    return {"access_token": issue("ADMIN", body.email), "role": "ADMIN", "read_only": False}
+@auth.post("/login")
+def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
+    """통합 로그인: 관리자 계정은 관리자 비밀번호 검증, 나머지는 저장 권한 또는 신규 USER."""
+    email = body.email.strip().lower()
+    if "@" not in email:
+        raise HTTPException(422, "이메일 형식이 올바르지 않습니다.")
+    client = request.client.host if request.client else "unknown"
+    env_admin = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    user = db.scalar(select(User).where(User.email == email))
+    # ADMIN 권한 계정(환경 변수 관리자·회원 관리에서 ADMIN으로 지정된 계정)은 관리자 비밀번호로만 진입
+    if env_admin and email == env_admin:
+        check_admin_login(email, body.password, client)
+    elif user and user.role == "ADMIN":
+        check_admin_password(body.password, client)
+    else:
+        if not user:
+            user = User(email=email, name=email.split("@")[0], role="USER", provider="email",
+                        joined=datetime.now(timezone.utc).date().isoformat())
+            db.add(user)
+            db.commit()
+        return {"access_token": issue(user.role, email), "role": user.role, "read_only": user.role == "TEST_ADMIN"}
+    if not user:
+        user = User(email=email, name="정식 관리자", role="ADMIN", provider="email",
+                    joined=datetime.now(timezone.utc).date().isoformat())
+        db.add(user)
+    user.role = "ADMIN"  # 환경 변수 관리자는 강등돼도 다음 로그인 시 복구
+    db.commit()
+    return {"access_token": issue("ADMIN", email), "role": "ADMIN", "read_only": False}
 
 
 @admin.get("/me")
@@ -254,7 +277,7 @@ def admin_collect(db: Session = Depends(get_db)):
 
 
 class RoleIn(BaseModel):
-    role: str = Field(pattern="^(USER|TEST_ADMIN)$")
+    role: str = Field(pattern="^(USER|TEST_ADMIN|ADMIN)$")
 
 
 @admin.patch("/users/{email}")
